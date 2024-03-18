@@ -14,6 +14,10 @@ Now it supports to scan all services installed in Kubernetes cluster and all exp
 make 
 ```
 
+## Download 
+
+Checkout the release page. 
+
 ## Usage
 
 ```bash

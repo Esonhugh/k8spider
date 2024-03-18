@@ -37,7 +37,7 @@ func ParseIPNetToIPs(ipv4Net *net.IPNet) (ips []net.IP) {
 func PTRRecord(ip net.IP) []string {
 	names, err := NetResolver.LookupAddr(context.Background(), ip.String())
 	if err != nil {
-		log.Errorf("LookupAddr failed: %v", err)
+		log.Debugf("LookupAddr failed: %v", err)
 		return nil
 	}
 	return names

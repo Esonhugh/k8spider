@@ -1,10 +1,13 @@
 package define
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type Record struct {
@@ -32,21 +35,12 @@ func (r *Record) Print(writer ...io.Writer) {
 	} else {
 		W = io.MultiWriter(writer...)
 	}
-	data := fmt.Sprintf("Found svc: %v at IP %v\n", r.SvcDomain, r.Ip)
-	if len(r.SrvRecords) != 0 {
-		for _, srv := range r.SrvRecords {
-			if srv.Srv == nil || len(srv.Srv) == 0 {
-				data += "But No Service Endpoint Found\n"
-				continue
-			} else {
-				data += fmt.Sprintf("Found %v's Endpoint:\n", srv.Cname)
-				for _, s := range srv.Srv {
-					data += fmt.Sprintf("- %v:%v \n", s.Target, s.Port)
-				}
-			}
-		}
+	data, err := json.Marshal(r)
+	if err != nil {
+		log.Error(err)
+		return
 	}
-	_, _ = fmt.Fprint(W, data)
+	_, _ = fmt.Fprintf(W, "%v", string(data))
 }
 
 type Records []Record

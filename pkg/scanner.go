@@ -12,7 +12,7 @@ func ScanSubnet(subnet *net.IPNet) (records []define.Record) {
 		ptr := PTRRecord(ip)
 		if len(ptr) > 0 {
 			for _, domain := range ptr {
-				log.Tracef("PTRRecord for %v,found: %v", ip, domain)
+				log.Infof("PTRrecord %v --> %v", ip, domain)
 				r := define.Record{Ip: ip, SvcDomain: domain}
 				records = append(records, r)
 			}
@@ -30,7 +30,7 @@ func ScanSvcForPorts(records []define.Record) []define.Record {
 			log.Debugf("SRVRecord for %v,failed: %v", r.SvcDomain, err)
 			continue
 		}
-		log.Tracef("SRVRecord for %v,found: %v", r.SvcDomain, srv)
+		log.Infof("SRVRecord: %v --> %v", r.SvcDomain, srv)
 		records[i].SetSrvRecord(cname, srv)
 	}
 	return records

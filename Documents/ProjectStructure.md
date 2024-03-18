@@ -1,4 +1,0 @@
-## Project Structure
-
-```txt
-```

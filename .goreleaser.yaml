@@ -19,10 +19,6 @@ archives:
   - name_template: "{{ .ProjectName }}_{{ .Tag }}_{{ .Os }}_{{ .Arch }}"
     files:
       - README.md
-      - CHANGELOG.md
-      - LICENSE
-      - docs/*
-      - images/*
     format_overrides:
       - goos: windows
         format: zip

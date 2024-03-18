@@ -25,5 +25,25 @@ echo $KUBERNETES_SERVICE_HOST
 ./k8spider all
 ```
 
+### Example
+
+```bash
+root@pod:/var/www/html/tools# env |grep KUBERNETES
+KUBERNETES_SERVICE_PORT_HTTPS=443
+KUBERNETES_SERVICE_PORT=443
+KUBERNETES_PORT_443_TCP=tcp://10.43.0.1:443
+KUBERNETES_PORT_443_TCP_PROTO=tcp
+KUBERNETES_PORT_443_TCP_ADDR=10.43.0.1
+KUBERNETES_SERVICE_HOST=10.43.0.1
+KUBERNETES_PORT=tcp://10.43.0.1:443
+KUBERNETES_PORT_443_TCP_PORT=443
+root@pod:/var/www/html/tools# ./k8spider all -c 10.43.43.1/24
+INFO[0000] PTRrecord 10.43.43.87 --> kube-state-metrics.lens-metrics.svc.cluster.local. 
+INFO[0000] PTRrecord 10.43.43.93 --> metrics-server.kube-system.svc.cluster.local. 
+INFO[0000] SRVRecord: kube-state-metrics.lens-metrics.svc.cluster.local. --> kube-state-metrics.lens-metrics.svc.cluster.local.:8080 
+INFO[0000] SRVRecord: metrics-server.kube-system.svc.cluster.local. --> metrics-server.kube-system.svc.cluster.local.:443 
+INFO[0000] {"Ip":"10.43.43.87","SvcDomain":"kube-state-metrics.lens-metrics.svc.cluster.local.","SrvRecords":[{"Cname":"kube-state-metrics.lens-metrics.svc.cluster.local.","Srv":[{"Target":"kube-state-metrics.lens-metrics.svc.cluster.local.","Port":8080,"Priority":0,"Weight":100}]}]} 
+```
+
 
 

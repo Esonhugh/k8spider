@@ -14,6 +14,7 @@ type Record struct {
 	Ip         net.IP
 	SvcDomain  string
 	SrvRecords []SrvRecord
+	Extra      string `json:"Extra,omitempty"`
 }
 
 type SrvRecord struct {

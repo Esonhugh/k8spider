@@ -47,3 +47,8 @@ func SRVRecord(svcDomain string) (string, []*net.SRV, error) {
 	cname, srvs, err := NetResolver.LookupSRV(context.Background(), "", "", svcDomain)
 	return cname, srvs, err
 }
+
+func ARecord(domain string) (ips []net.IP, err error) {
+	ips, err = net.LookupIP(domain)
+	return
+}

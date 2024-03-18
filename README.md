@@ -8,7 +8,7 @@ And I extended it ability on Kubernetes Service Discovery.
 
 Now it supports to scan all services installed in Kubernetes cluster and all exposed ports in service.
 
-## build
+## Build
 
 ```bash
 make 
@@ -25,7 +25,7 @@ echo $KUBERNETES_SERVICE_HOST
 ./k8spider all
 ```
 
-### Example
+## Example
 
 ```bash
 root@pod:/var/www/html/tools# env |grep KUBERNETES

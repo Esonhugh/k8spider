@@ -6,6 +6,7 @@ import (
 	command "github.com/esonhugh/k8spider/cmd"
 	"github.com/esonhugh/k8spider/define"
 	"github.com/esonhugh/k8spider/pkg"
+	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -34,15 +35,21 @@ var AllCmd = &cobra.Command{
 			return
 		}
 		records = pkg.ScanSvcForPorts(records)
-		if command.Opts.OutputFile != "" {
-			f, err := os.OpenFile(command.Opts.OutputFile, os.O_CREATE|os.O_WRONLY, 0644)
-			if err != nil {
-				log.Warnf("OpenFile failed: %v", err)
-			}
-			defer f.Close()
-			records.Print(log.StandardLogger().Writer(), f)
-		} else {
-			records.Print(log.StandardLogger().Writer())
-		}
+		printResult(records)
+		records = pkg.DumpAXFR(dns.Fqdn(command.Opts.Zone), "ns.dns."+command.Opts.Zone+":53")
+		printResult(records)
 	},
+}
+
+func printResult(records define.Records) {
+	if command.Opts.OutputFile != "" {
+		f, err := os.OpenFile(command.Opts.OutputFile, os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			log.Warnf("OpenFile failed: %v", err)
+		}
+		defer f.Close()
+		records.Print(log.StandardLogger().Writer(), f)
+	} else {
+		records.Print(log.StandardLogger().Writer())
+	}
 }

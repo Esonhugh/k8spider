@@ -30,7 +30,9 @@ func ScanSvcForPorts(records []define.Record) []define.Record {
 			log.Debugf("SRVRecord for %v,failed: %v", r.SvcDomain, err)
 			continue
 		}
-		log.Infof("SRVRecord: %v --> %v", r.SvcDomain, srv)
+		for _, s := range srv {
+			log.Infof("SRVRecord: %v --> %v:%v", r.SvcDomain, s.Target, s.Port)
+		}
 		records[i].SetSrvRecord(cname, srv)
 	}
 	return records

@@ -40,7 +40,7 @@ func (r *Record) Print(writer ...io.Writer) {
 		log.Error(err)
 		return
 	}
-	_, _ = fmt.Fprintf(W, "%v", string(data))
+	_, _ = fmt.Fprintf(W, "%v\n", string(data))
 }
 
 type Records []Record

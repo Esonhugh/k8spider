@@ -40,9 +40,9 @@ var AllCmd = &cobra.Command{
 				log.Warnf("OpenFile failed: %v", err)
 			}
 			defer f.Close()
-			records.Print(os.Stdout, f)
+			records.Print(log.StandardLogger().Writer(), f)
 		} else {
-			records.Print()
+			records.Print(log.StandardLogger().Writer())
 		}
 	},
 }

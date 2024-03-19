@@ -11,16 +11,22 @@ import (
 
 func ScanSubnet(subnet *net.IPNet) (records []define.Record) {
 	for _, ip := range ParseIPNetToIPs(subnet) {
-		ptr := PTRRecord(ip)
-		if len(ptr) > 0 {
-			for _, domain := range ptr {
-				log.Infof("PTRrecord %v --> %v", ip, domain)
-				r := define.Record{Ip: ip, SvcDomain: domain}
-				records = append(records, r)
+		define.Wg.Add(1)
+		go func(ip net.IP) {
+			defer define.Wg.Done()
+			ptr := PTRRecord(ip)
+			if len(ptr) > 0 {
+				for _, domain := range ptr {
+					log.Infof("PTRrecord %v --> %v", ip, domain)
+					r := define.Record{Ip: ip, SvcDomain: domain}
+					define.Mutex.Lock()
+					records = append(records, r)
+					define.Mutex.Unlock()
+				}
+			} else {
+				return
 			}
-		} else {
-			continue
-		}
+		}(ip)
 	}
 	return
 }

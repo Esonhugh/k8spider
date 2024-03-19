@@ -6,8 +6,14 @@ import (
 	"io"
 	"net"
 	"os"
+	"sync"
 
 	log "github.com/sirupsen/logrus"
+)
+
+var (
+	Wg    sync.WaitGroup
+	Mutex sync.Mutex
 )
 
 type Record struct {

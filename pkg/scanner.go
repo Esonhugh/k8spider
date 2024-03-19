@@ -28,21 +28,29 @@ func ScanSubnet(subnet *net.IPNet) (records []define.Record) {
 			}
 		}(ip)
 	}
+	define.Wg.Wait()
 	return
 }
 
 func ScanSvcForPorts(records []define.Record) []define.Record {
+	define.Wg.Add(len(records))
 	for i, r := range records {
-		cname, srv, err := SRVRecord(r.SvcDomain)
-		if err != nil {
-			log.Debugf("SRVRecord for %v,failed: %v", r.SvcDomain, err)
-			continue
-		}
-		for _, s := range srv {
-			log.Infof("SRVRecord: %v --> %v:%v", r.SvcDomain, s.Target, s.Port)
-		}
-		records[i].SetSrvRecord(cname, srv)
+		go func(r define.Record) {
+			defer define.Wg.Done()
+			cname, srv, err := SRVRecord(r.SvcDomain)
+			if err != nil {
+				log.Debugf("SRVRecord for %v,failed: %v", r.SvcDomain, err)
+				return
+			}
+			for _, s := range srv {
+				log.Infof("SRVRecord: %v --> %v:%v", r.SvcDomain, s.Target, s.Port)
+			}
+			define.Mutex.Lock()
+			records[i].SetSrvRecord(cname, srv)
+			define.Mutex.Unlock()
+		}(r)
 	}
+	define.Wg.Wait()
 	return records
 }
 

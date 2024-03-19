@@ -27,7 +27,7 @@ var SubNetCmd = &cobra.Command{
 			log.Warnf("ParseStringToIPNet failed: %v", err)
 			return
 		}
-		var records define.Records = pkg.ScanSubnet(ipNets)
+		var records define.Records = pkg.ScanSubnet(ipNets, command.Opts.Thread)
 		if records == nil || len(records) == 0 {
 			log.Warnf("ScanSubnet Found Nothing: %v", err)
 			return

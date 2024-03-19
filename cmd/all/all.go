@@ -29,14 +29,14 @@ var AllCmd = &cobra.Command{
 			log.Warnf("ParseStringToIPNet failed: %v", err)
 			return
 		}
-		var records define.Records = pkg.ScanSubnet(ipNets)
+		var records define.Records = pkg.ScanSubnet(ipNets, command.Opts.Thread)
 		if records == nil || len(records) == 0 {
 			log.Warnf("ScanSubnet Found Nothing: %v", err)
 			return
 		}
-		records = pkg.ScanSvcForPorts(records)
+		records = pkg.ScanSvcForPorts(records, command.Opts.Thread)
 		printResult(records)
-		records = pkg.DumpAXFR(dns.Fqdn(command.Opts.Zone), "ns.dns."+command.Opts.Zone+":53")
+		records = pkg.DumpAXFR(dns.Fqdn(command.Opts.Zone), "ns.dns."+command.Opts.Zone+":53", command.Opts.Thread)
 		printResult(records)
 	},
 }

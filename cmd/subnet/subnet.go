@@ -6,6 +6,7 @@ import (
 	command "github.com/esonhugh/k8spider/cmd"
 	"github.com/esonhugh/k8spider/define"
 	"github.com/esonhugh/k8spider/pkg"
+	"github.com/esonhugh/k8spider/pkg/scanner"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -27,7 +28,7 @@ var SubNetCmd = &cobra.Command{
 			log.Warnf("ParseStringToIPNet failed: %v", err)
 			return
 		}
-		var records define.Records = pkg.ScanSubnet(ipNets)
+		var records define.Records = scanner.ScanSubnet(ipNets)
 		if records == nil || len(records) == 0 {
 			log.Warnf("ScanSubnet Found Nothing: %v", err)
 			return

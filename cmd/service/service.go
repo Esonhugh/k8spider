@@ -6,7 +6,7 @@ import (
 
 	command "github.com/esonhugh/k8spider/cmd"
 	"github.com/esonhugh/k8spider/define"
-	"github.com/esonhugh/k8spider/pkg"
+	"github.com/esonhugh/k8spider/pkg/scanner"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -27,7 +27,7 @@ var ServiceCmd = &cobra.Command{
 		for _, domain := range command.Opts.SvcDomains {
 			records = append(records, define.Record{SvcDomain: fmt.Sprintf("%s.svc.%s", domain, command.Opts.Zone)})
 		}
-		records = pkg.ScanSvcForPorts(records)
+		records = scanner.ScanSvcForPorts(records)
 		if command.Opts.OutputFile != "" {
 			f, err := os.OpenFile(command.Opts.OutputFile, os.O_CREATE|os.O_WRONLY, 0644)
 			if err != nil {

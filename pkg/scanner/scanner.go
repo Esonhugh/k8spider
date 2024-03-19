@@ -1,17 +1,18 @@
-package pkg
+package scanner
 
 import (
 	"net"
 	"strings"
 
 	"github.com/esonhugh/k8spider/define"
+	"github.com/esonhugh/k8spider/pkg"
 	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
 )
 
 func ScanSubnet(subnet *net.IPNet) (records []define.Record) {
-	for _, ip := range ParseIPNetToIPs(subnet) {
-		ptr := PTRRecord(ip)
+	for _, ip := range pkg.ParseIPNetToIPs(subnet) {
+		ptr := pkg.PTRRecord(ip)
 		if len(ptr) > 0 {
 			for _, domain := range ptr {
 				log.Infof("PTRrecord %v --> %v", ip, domain)
@@ -27,7 +28,7 @@ func ScanSubnet(subnet *net.IPNet) (records []define.Record) {
 
 func ScanSvcForPorts(records []define.Record) []define.Record {
 	for i, r := range records {
-		cname, srv, err := SRVRecord(r.SvcDomain)
+		cname, srv, err := pkg.SRVRecord(r.SvcDomain)
 		if err != nil {
 			log.Debugf("SRVRecord for %v,failed: %v", r.SvcDomain, err)
 			continue

@@ -3,7 +3,9 @@ package pkg
 import (
 	"context"
 	"encoding/binary"
+	"fmt"
 	"net"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -34,18 +36,38 @@ func ParseIPNetToIPs(ipv4Net *net.IPNet) (ips []net.IP) {
 	return
 }
 
+var RetryCount = 2
+
+func retryCoolDown() {
+	time.Sleep(10 * time.Millisecond)
+}
+
 func PTRRecord(ip net.IP) []string {
-	names, err := NetResolver.LookupAddr(context.Background(), ip.String())
-	if err != nil {
-		log.Debugf("LookupAddr failed: %v", err)
-		return nil
+	var lastErr error
+	for i := 0; i < RetryCount; i++ {
+		names, err := NetResolver.LookupAddr(context.Background(), ip.String())
+		if err == nil {
+			return names
+		}
+		lastErr = err
+		retryCoolDown()
 	}
-	return names
+	log.Debugf("LookupAddr %v failed, no service addr found. reason: %v", ip.String(), lastErr)
+	return nil
 }
 
 func SRVRecord(svcDomain string) (string, []*net.SRV, error) {
-	cname, srvs, err := NetResolver.LookupSRV(context.Background(), "", "", svcDomain)
-	return cname, srvs, err
+	var lastErr error
+	for i := 0; i < RetryCount; i++ {
+		cname, srvs, err := NetResolver.LookupSRV(context.Background(), "", "", svcDomain)
+		if err == nil {
+			return cname, srvs, nil
+		}
+		lastErr = err
+		retryCoolDown()
+	}
+	log.Debugf("LookupSRV %v failed, no ports record found. reason: %v", svcDomain, lastErr)
+	return "", nil, fmt.Errorf("LookupSRV %v failed", svcDomain)
 }
 
 func ARecord(domain string) (ips []net.IP, err error) {

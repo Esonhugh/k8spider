@@ -18,6 +18,7 @@ var Opts = struct {
 	Zone       string
 	OutputFile string
 	LogLevel   string
+	Threads    int
 }{}
 
 func init() {
@@ -27,6 +28,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&Opts.Zone, "zone", "z", "cluster.local", "zone")
 	RootCmd.PersistentFlags().StringVarP(&Opts.OutputFile, "output-file", "o", "", "output file")
 	RootCmd.PersistentFlags().StringVarP(&Opts.LogLevel, "log-level", "l", "info", "log level")
+	RootCmd.PersistentFlags().IntVarP(&Opts.Threads, "threads", "t", 4, "threads")
 }
 
 var RootCmd = &cobra.Command{
@@ -44,6 +46,10 @@ var RootCmd = &cobra.Command{
 				},
 			}
 		}
+		if Opts.Threads < 1 {
+			log.Fatalln("threads must be greater than 0")
+		}
+		pkg.Threads = Opts.Threads
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		_ = cmd.Help()

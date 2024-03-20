@@ -13,7 +13,6 @@ import (
 
 func init() {
 	command.RootCmd.AddCommand(AllCmd)
-
 }
 
 var AllCmd = &cobra.Command{

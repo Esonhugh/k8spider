@@ -2,6 +2,8 @@ package pkg
 
 import log "github.com/sirupsen/logrus"
 
+var Threads = 4
+
 type StaticTaskRunner[Task any] interface {
 	Generator(chan Task)
 	Solver(Task)

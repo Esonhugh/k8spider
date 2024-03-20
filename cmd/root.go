@@ -46,6 +46,9 @@ var RootCmd = &cobra.Command{
 				},
 			}
 		}
+		if Opts.Threads < 1 {
+			log.Fatalln("threads must be greater than 0")
+		}
 		pkg.Threads = Opts.Threads
 	},
 	Run: func(cmd *cobra.Command, args []string) {

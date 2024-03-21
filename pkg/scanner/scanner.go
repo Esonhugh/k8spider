@@ -66,7 +66,7 @@ func DumpAXFR(target string, dnsServer string) ([]define.Record, error) {
 	var records []define.Record
 	for rr := range ch {
 		if rr.Error != nil {
-			log.Errorf("Error: %v", rr.Error)
+			log.Debugf("Error: %v", rr.Error)
 			continue
 		}
 		for _, r := range rr.RR {

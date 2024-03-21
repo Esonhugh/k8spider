@@ -3,6 +3,7 @@ package mutli
 import (
 	"net"
 	"sync"
+	"time"
 
 	"github.com/esonhugh/k8spider/define"
 	"github.com/esonhugh/k8spider/pkg"
@@ -22,11 +23,12 @@ func NewSubnetScanner() *SubnetScanner {
 
 func (s *SubnetScanner) ScanSubnet(subnet *net.IPNet) <-chan []define.Record {
 	if subnet == nil {
-		log.Tracef("subnet is nil")
+		log.Debugf("subnet is nil")
 		return nil
 	}
 	out := make(chan []define.Record, 100)
 	go func() {
+		log.Debugf("splitting subnet into 16 pices")
 		if subnets, err := pkg.SubnetShift(subnet, 4); err != nil {
 			go s.scan(subnet, out)
 		} else {
@@ -34,6 +36,7 @@ func (s *SubnetScanner) ScanSubnet(subnet *net.IPNet) <-chan []define.Record {
 				go s.scan(sn, out)
 			}
 		}
+		time.Sleep(10 * time.Millisecond) // wait for all goroutines to start
 		s.wg.Wait()
 		close(out)
 	}()

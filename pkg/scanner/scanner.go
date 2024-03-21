@@ -4,14 +4,25 @@ import (
 	"net"
 	"strings"
 
+	"github.com/cheggaaa/pb/v3"
 	"github.com/esonhugh/k8spider/define"
 	"github.com/esonhugh/k8spider/pkg"
 	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
 )
 
-func ScanSubnet(subnet *net.IPNet) (records []define.Record) {
-	for _, ip := range pkg.ParseIPNetToIPs(subnet) {
+var BarTemplate = `{{ string . "subnet" }} {{ bar . "[" "-" (cycle . ">" ) "." "]"}} {{speed .  }} {{percent .}}`
+
+func ScanSubnet(subnet *net.IPNet, optPb *pb.ProgressBar) (records []define.Record) {
+	subnetIPlist := pkg.ParseIPNetToIPs(subnet)
+	var bar *pb.ProgressBar
+	if optPb != nil {
+		bar = optPb.SetTemplateString(BarTemplate).Start()
+	} else {
+		bar = pb.ProgressBarTemplate(BarTemplate).Start(len(subnetIPlist))
+	}
+	bar.Set("subnet", subnet.String())
+	for _, ip := range subnetIPlist {
 		ptr := pkg.PTRRecord(ip)
 		if len(ptr) > 0 {
 			for _, domain := range ptr {
@@ -19,10 +30,10 @@ func ScanSubnet(subnet *net.IPNet) (records []define.Record) {
 				r := define.Record{Ip: ip, SvcDomain: domain}
 				records = append(records, r)
 			}
-		} else {
-			continue
 		}
+		bar.Increment()
 	}
+	bar.Finish()
 	return
 }
 

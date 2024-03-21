@@ -46,7 +46,7 @@ var AllCmd = &cobra.Command{
 }
 
 func Run(net *net.IPNet) {
-	var records define.Records = scanner.ScanSubnet(net)
+	var records define.Records = scanner.ScanSubnet(net, nil)
 	if records == nil || len(records) == 0 {
 		log.Warnf("ScanSubnet Found Nothing")
 		return

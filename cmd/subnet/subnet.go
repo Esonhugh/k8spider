@@ -19,7 +19,7 @@ func init() {
 
 var SubNetCmd = &cobra.Command{
 	Use:   "subnet",
-	Short: "subnet is a tool to discover k8s available ip in subnet",
+	Short: "subnet is a tool to discover k8s available service ip in subnet",
 	Run: func(cmd *cobra.Command, args []string) {
 		if command.Opts.Cidr == "" {
 			log.Warn("cidr is required")

@@ -17,7 +17,7 @@ func init() {
 
 var ServiceCmd = &cobra.Command{
 	Use:   "service",
-	Short: "service is a tool to discover k8s services",
+	Short: "service is a tool to discover k8s services ports",
 	Run: func(cmd *cobra.Command, args []string) {
 		if command.Opts.Zone == "" || command.Opts.SvcDomains == nil || len(command.Opts.SvcDomains) == 0 {
 			log.Warn("zone can't empty and svc-domains can't empty")

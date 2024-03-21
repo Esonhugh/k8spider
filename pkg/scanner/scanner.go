@@ -42,13 +42,13 @@ func ScanSvcForPorts(records []define.Record) []define.Record {
 }
 
 // default target should be zone
-func DumpAXFR(target string, dnsServer string) []define.Record {
+func DumpAXFR(target string, dnsServer string) ([]define.Record, error) {
 	t := new(dns.Transfer)
 	m := new(dns.Msg)
 	m.SetAxfr(target)
 	ch, err := t.In(m, dnsServer)
 	if err != nil {
-		log.Fatalf("Transfer failed: %v", err)
+		return nil, err
 	}
 	var records []define.Record
 	for rr := range ch {
@@ -64,5 +64,5 @@ func DumpAXFR(target string, dnsServer string) []define.Record {
 		}
 		log.Debugf("Record: %v", rr.RR)
 	}
-	return records
+	return records, nil
 }

@@ -27,6 +27,11 @@ var AllCmd = &cobra.Command{
 			log.Warn("cidr is required")
 			return
 		}
+		records, err := scanner.DumpAXFR(dns.Fqdn(command.Opts.Zone), "ns.dns."+command.Opts.Zone+":53")
+		if err == nil {
+			printResult(records)
+		}
+		log.Errorf("Transfer failed: %v", err)
 		ipNets, err := pkg.ParseStringToIPNet(command.Opts.Cidr)
 		if err != nil {
 			log.Warnf("ParseStringToIPNet failed: %v", err)
@@ -37,8 +42,6 @@ var AllCmd = &cobra.Command{
 		} else {
 			Run(ipNets)
 		}
-		records := scanner.DumpAXFR(dns.Fqdn(command.Opts.Zone), "ns.dns."+command.Opts.Zone+":53")
-		printResult(records)
 	},
 }
 

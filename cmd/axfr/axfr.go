@@ -35,7 +35,12 @@ var AxfrCmd = &cobra.Command{
 		}
 
 		log.Debugf("same command: dig axfr %v @%v", zone, dnsServer)
-		var records define.Records = scanner.DumpAXFR(zone, dnsServer)
+		var records define.Records
+		records, err := scanner.DumpAXFR(zone, dnsServer)
+		if err != nil {
+			log.Errorf("Transfer failed: %v", err)
+			return
+		}
 		if command.Opts.OutputFile != "" {
 			f, err := os.OpenFile(command.Opts.OutputFile, os.O_CREATE|os.O_WRONLY, 0644)
 			if err != nil {

@@ -75,6 +75,7 @@ func DumpWildCard(zone string) {
 			log.Error(err)
 			return
 		}
+		data = append(data, '\n')
 		_, err = f.Write(data)
 		if err != nil {
 			log.Error(err)

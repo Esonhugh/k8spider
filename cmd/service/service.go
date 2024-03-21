@@ -29,7 +29,7 @@ var ServiceCmd = &cobra.Command{
 		}
 		records = scanner.ScanSvcForPorts(records)
 		if command.Opts.OutputFile != "" {
-			f, err := os.OpenFile(command.Opts.OutputFile, os.O_CREATE|os.O_WRONLY, 0644)
+			f, err := os.OpenFile(command.Opts.OutputFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 			if err != nil {
 				log.Warnf("OpenFile failed: %v", err)
 			}

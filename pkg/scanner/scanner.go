@@ -1,17 +1,30 @@
-package pkg
+package scanner
 
 import (
 	"net"
 	"strings"
 
 	"github.com/esonhugh/k8spider/define"
+	"github.com/esonhugh/k8spider/pkg"
 	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
 )
 
+func ScanSingleIP(subnet net.IP) (records []define.Record) {
+	ptr := pkg.PTRRecord(subnet)
+	if len(ptr) > 0 {
+		for _, domain := range ptr {
+			log.Infof("PTRrecord %v --> %v", subnet, domain)
+			r := define.Record{Ip: subnet, SvcDomain: domain}
+			records = append(records, r)
+		}
+	}
+	return
+}
+
 func ScanSubnet(subnet *net.IPNet) (records []define.Record) {
-	for _, ip := range ParseIPNetToIPs(subnet) {
-		ptr := PTRRecord(ip)
+	for _, ip := range pkg.ParseIPNetToIPs(subnet) {
+		ptr := pkg.PTRRecord(ip)
 		if len(ptr) > 0 {
 			for _, domain := range ptr {
 				log.Infof("PTRrecord %v --> %v", ip, domain)
@@ -25,9 +38,22 @@ func ScanSubnet(subnet *net.IPNet) (records []define.Record) {
 	return
 }
 
+func ScanSingleSvcForPorts(records define.Record) define.Record {
+	cname, srv, err := pkg.SRVRecord(records.SvcDomain)
+	if err != nil {
+		log.Debugf("SRVRecord for %v,failed: %v", records.SvcDomain, err)
+		return records
+	}
+	for _, s := range srv {
+		log.Infof("SRVRecord: %v --> %v:%v", records.SvcDomain, s.Target, s.Port)
+	}
+	records.SetSrvRecord(cname, srv)
+	return records
+}
+
 func ScanSvcForPorts(records []define.Record) []define.Record {
 	for i, r := range records {
-		cname, srv, err := SRVRecord(r.SvcDomain)
+		cname, srv, err := pkg.SRVRecord(r.SvcDomain)
 		if err != nil {
 			log.Debugf("SRVRecord for %v,failed: %v", r.SvcDomain, err)
 			continue
@@ -41,18 +67,18 @@ func ScanSvcForPorts(records []define.Record) []define.Record {
 }
 
 // default target should be zone
-func DumpAXFR(target string, dnsServer string) []define.Record {
+func DumpAXFR(target string, dnsServer string) ([]define.Record, error) {
 	t := new(dns.Transfer)
 	m := new(dns.Msg)
 	m.SetAxfr(target)
 	ch, err := t.In(m, dnsServer)
 	if err != nil {
-		log.Fatalf("Transfer failed: %v", err)
+		return nil, err
 	}
 	var records []define.Record
 	for rr := range ch {
 		if rr.Error != nil {
-			log.Errorf("Error: %v", rr.Error)
+			log.Debugf("Error: %v", rr.Error)
 			continue
 		}
 		for _, r := range rr.RR {
@@ -63,5 +89,5 @@ func DumpAXFR(target string, dnsServer string) []define.Record {
 		}
 		log.Debugf("Record: %v", rr.RR)
 	}
-	return records
+	return records, nil
 }

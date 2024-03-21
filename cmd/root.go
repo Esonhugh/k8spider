@@ -17,7 +17,9 @@ var Opts = struct {
 	SvcDomains []string
 	Zone       string
 	OutputFile string
-	LogLevel   string
+	Verbose    string
+
+	BatchMode bool
 }{}
 
 func init() {
@@ -26,7 +28,8 @@ func init() {
 	RootCmd.PersistentFlags().StringSliceVarP(&Opts.SvcDomains, "svc-domains", "s", []string{}, "service domains, like: kubernetes.default,etcd.default don't add zone like svc.cluster.local")
 	RootCmd.PersistentFlags().StringVarP(&Opts.Zone, "zone", "z", "cluster.local", "zone")
 	RootCmd.PersistentFlags().StringVarP(&Opts.OutputFile, "output-file", "o", "", "output file")
-	RootCmd.PersistentFlags().StringVarP(&Opts.LogLevel, "log-level", "l", "info", "log level")
+	RootCmd.PersistentFlags().StringVarP(&Opts.Verbose, "verbose", "v", "info", "log level (debug,info,trace,warn,error,fatal,panic)")
+	RootCmd.PersistentFlags().BoolVarP(&Opts.BatchMode, "batch-mode", "b", false, "batch mode")
 }
 
 var RootCmd = &cobra.Command{
@@ -34,7 +37,7 @@ var RootCmd = &cobra.Command{
 	Short: "k8spider is a tool to discover k8s services",
 	Long:  "k8spider is a tool to discover k8s services",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		SetLogLevel(Opts.LogLevel)
+		SetLogLevel(Opts.Verbose)
 		if Opts.DnsServer != "" {
 			pkg.NetResolver = &net.Resolver{
 				PreferGo: true,

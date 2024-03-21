@@ -6,7 +6,7 @@ import (
 
 	command "github.com/esonhugh/k8spider/cmd"
 	"github.com/esonhugh/k8spider/define"
-	"github.com/esonhugh/k8spider/pkg"
+	"github.com/esonhugh/k8spider/pkg/scanner"
 	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -35,7 +35,12 @@ var AxfrCmd = &cobra.Command{
 		}
 
 		log.Debugf("same command: dig axfr %v @%v", zone, dnsServer)
-		var records define.Records = pkg.DumpAXFR(zone, dnsServer)
+		var records define.Records
+		records, err := scanner.DumpAXFR(zone, dnsServer)
+		if err != nil {
+			log.Errorf("Transfer failed: %v", err)
+			return
+		}
 		if command.Opts.OutputFile != "" {
 			f, err := os.OpenFile(command.Opts.OutputFile, os.O_CREATE|os.O_WRONLY, 0644)
 			if err != nil {

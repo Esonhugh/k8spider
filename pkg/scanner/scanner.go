@@ -26,6 +26,19 @@ func ScanSubnet(subnet *net.IPNet) (records []define.Record) {
 	return
 }
 
+func ScanSingleSvcForPorts(records define.Record) define.Record {
+	cname, srv, err := pkg.SRVRecord(records.SvcDomain)
+	if err != nil {
+		log.Debugf("SRVRecord for %v,failed: %v", records.SvcDomain, err)
+		return records
+	}
+	for _, s := range srv {
+		log.Infof("SRVRecord: %v --> %v:%v", records.SvcDomain, s.Target, s.Port)
+	}
+	records.SetSrvRecord(cname, srv)
+	return records
+}
+
 func ScanSvcForPorts(records []define.Record) []define.Record {
 	for i, r := range records {
 		cname, srv, err := pkg.SRVRecord(r.SvcDomain)

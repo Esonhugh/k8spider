@@ -30,8 +30,16 @@ var AllCmd = &cobra.Command{
 		records, err := scanner.DumpAXFR(dns.Fqdn(command.Opts.Zone), "ns.dns."+command.Opts.Zone+":53")
 		if err == nil {
 			printResult(records)
+			return
 		}
 		log.Errorf("Transfer failed: %v", err)
+		records = scanner.DumpWildCard(command.Opts.Zone)
+		if records != nil && len(records) > 0 {
+			printResult(records)
+			return
+		}
+		log.Errorf("WildCard dns dump failed: %v", err)
+
 		ipNets, err := pkg.ParseStringToIPNet(command.Opts.Cidr)
 		if err != nil {
 			log.Warnf("ParseStringToIPNet failed: %v", err)

@@ -45,6 +45,9 @@ func (s *SubnetScanner) ScanSubnet(subnet *net.IPNet) <-chan []define.Record {
 
 func (s *SubnetScanner) scan(subnet *net.IPNet, to chan []define.Record) {
 	s.wg.Add(1)
-	to <- scanner.ScanSubnet(subnet)
+	// to <- scanner.ScanSubnet(subnet)
+	for _, ip := range pkg.ParseIPNetToIPs(subnet) {
+		to <- scanner.ScanSingleIP(ip)
+	}
 	s.wg.Done()
 }

@@ -10,6 +10,18 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+func ScanSingleIP(subnet net.IP) (records []define.Record) {
+	ptr := pkg.PTRRecord(subnet)
+	if len(ptr) > 0 {
+		for _, domain := range ptr {
+			log.Infof("PTRrecord %v --> %v", subnet, domain)
+			r := define.Record{Ip: subnet, SvcDomain: domain}
+			records = append(records, r)
+		}
+	}
+	return
+}
+
 func ScanSubnet(subnet *net.IPNet) (records []define.Record) {
 	for _, ip := range pkg.ParseIPNetToIPs(subnet) {
 		ptr := pkg.PTRRecord(ip)

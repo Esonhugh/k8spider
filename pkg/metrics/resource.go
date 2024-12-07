@@ -52,13 +52,23 @@ type ResourceMergeHook func(m *MetricMatcher, resource ResourceList) (res *Resou
 
 var EndpointMergeHook ResourceMergeHook = func(m *MetricMatcher, res ResourceList) (r *Resource, addFlag bool) {
 	if m.Name == "endpoint_address" || m.Name == "endpoint_port" {
-		for i, c := range res {
+		for i := len(res) - 1; i >= 0; i-- {
+			c := res[i]
 			if m.FindLabel("namespace") == c.Namespace && m.FindLabel("endpoint") == c.Name {
 				r = res[i]
 				return r, false
 			}
 		}
 		return NewResource("endpoint"), true
+		/*
+			for i, c := range res {
+				if m.FindLabel("namespace") == c.Namespace && m.FindLabel("endpoint") == c.Name {
+					r = res[i]
+					return r, false
+				}
+			}
+			return NewResource("endpoint"), true
+		*/
 	}
 	return nil, true
 }

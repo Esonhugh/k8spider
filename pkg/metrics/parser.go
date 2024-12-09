@@ -28,9 +28,10 @@ type Label struct {
 }
 
 type MetricMatcher struct {
-	Name         string     `json:"type"`
+	Type         string     `json:"type"`
 	Header       string     `json:"-"`
 	Labels       []Label    `json:"labels"`
+	nameLabel    string     `json:"-"`
 	grok         *grok.Grok `json:"-"`
 	finalPattern string
 	ptr          any `json:"-"`
@@ -38,9 +39,10 @@ type MetricMatcher struct {
 
 func NewMetricMatcher(t string) *MetricMatcher {
 	return &MetricMatcher{
-		Name:   t,
-		grok:   grok.New(),
-		Labels: make([]Label, 0),
+		Type:      t,
+		nameLabel: t,
+		grok:      grok.New(),
+		Labels:    make([]Label, 0),
 	}
 }
 
@@ -60,7 +62,7 @@ func (mt *MetricMatcher) Compile() error {
 		return err
 	}
 	if mt.Header == "" {
-		mt.Header = `kube_` + mt.Name + `_info` // custom head
+		mt.Header = `kube_` + mt.Type + `_info` // custom head
 	}
 	header := mt.Header
 	var body []string
@@ -138,6 +140,15 @@ func (mt *MetricMatcher) DumpString() string {
 	return string(b)
 }
 
+func (mt *MetricMatcher) SetNameLabel(n string) *MetricMatcher {
+	mt.nameLabel = n
+	return mt
+}
+
+func (mt *MetricMatcher) LabelNameOfName() string {
+	return mt.nameLabel
+}
+
 func init() {
 	err := COMMON_MATCH_GROK.AddPatterns(MetricsPatterns)
 	if err != nil {
@@ -155,8 +166,9 @@ func (mt *MetricMatcher) CopyData() *MetricMatcher {
 		newLabel = append(newLabel, label)
 	}
 	return &MetricMatcher{
-		Name:   strings.Clone(mt.Name),
-		Header: strings.Clone(mt.Header),
-		Labels: newLabel,
+		Type:      strings.Clone(mt.Type),
+		Header:    strings.Clone(mt.Header),
+		nameLabel: strings.Clone(mt.nameLabel),
+		Labels:    newLabel,
 	}
 }

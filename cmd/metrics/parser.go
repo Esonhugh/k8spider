@@ -67,7 +67,7 @@ var MetricCmd = &cobra.Command{
 				continue
 			} else {
 				log.Debugf("matched: %s", res.DumpString())
-				rx = append(rx, res.CopyData())
+				rx = append(rx, res)
 			}
 		}
 		if err := scanner.Err(); err != nil {

@@ -48,10 +48,24 @@ func (rl *ResourceList) Print(writer ...io.Writer) {
 	}
 }
 
-type ResourceMergeHook func(m *MetricMatcher, resource ResourceList) (res *Resource, addFlag bool)
+type ResourceMergeHook func(m *MetricMatcher, res ResourceList) (r *Resource, addFlag bool)
+
+var NodeMergeHook ResourceMergeHook = func(m *MetricMatcher, res ResourceList) (r *Resource, addFlag bool) {
+	if m.Type == "node" || m.Type == "node_role" {
+		for i := len(res) - 1; i >= 0; i-- {
+			c := res[i]
+			if m.FindLabel("node") == c.Name {
+				r = res[i]
+				return r, false
+			}
+		}
+		return NewResource("node"), true
+	}
+	return nil, true
+}
 
 var EndpointMergeHook ResourceMergeHook = func(m *MetricMatcher, res ResourceList) (r *Resource, addFlag bool) {
-	if m.Name == "endpoint_address" || m.Name == "endpoint_port" {
+	if m.Type == "endpoint_address" || m.Type == "endpoint_port" {
 		for i := len(res) - 1; i >= 0; i-- {
 			c := res[i]
 			if m.FindLabel("namespace") == c.Namespace && m.FindLabel("endpoint") == c.Name {
@@ -62,7 +76,7 @@ var EndpointMergeHook ResourceMergeHook = func(m *MetricMatcher, res ResourceLis
 		return NewResource("endpoint"), true
 		/*
 			for i, c := range res {
-				if m.FindLabel("namespace") == c.Namespace && m.FindLabel("endpoint") == c.Name {
+				if m.FindLabel("namespace") == c.Namespace && m.FindLabel("endpoint") == c.Type {
 					r = res[i]
 					return r, false
 				}
@@ -76,7 +90,7 @@ var EndpointMergeHook ResourceMergeHook = func(m *MetricMatcher, res ResourceLis
 func ConvertToResource(r []*MetricMatcher, hooks ...ResourceMergeHook) []*Resource {
 	var res []*Resource
 	if len(hooks) == 0 {
-		hooks = append(hooks, EndpointMergeHook)
+		hooks = append(hooks, EndpointMergeHook, NodeMergeHook)
 	}
 
 	for _, m := range r {
@@ -90,7 +104,7 @@ func ConvertToResource(r []*MetricMatcher, hooks ...ResourceMergeHook) []*Resour
 			}
 		}
 
-		resourceType := m.Name
+		resourceType := m.Type
 		if resource != nil {
 			resourceType = resource.Type
 		}
@@ -99,11 +113,11 @@ func ConvertToResource(r []*MetricMatcher, hooks ...ResourceMergeHook) []*Resour
 		}
 
 		resource.Namespace = m.FindLabel("namespace")
-		resource.Name = m.FindLabel(resourceType)
+		resource.Name = m.FindLabel(m.LabelNameOfName())
 
 		// merge endpoint_address and endpoint_port
 		for _, l := range m.Labels {
-			if l.Key != "namespace" && l.Key != resourceType {
+			if l.Key != "namespace" && l.Key != m.LabelNameOfName() {
 				resource.AddLabelSpec(l)
 			}
 		}

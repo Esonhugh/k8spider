@@ -50,47 +50,12 @@ func (rl *ResourceList) Print(writer ...io.Writer) {
 
 type ResourceMergeHook func(m *MetricMatcher, res ResourceList) (r *Resource, addFlag bool)
 
-var NodeMergeHook ResourceMergeHook = func(m *MetricMatcher, res ResourceList) (r *Resource, addFlag bool) {
-	if m.Type == "node" || m.Type == "node_role" {
-		for i := len(res) - 1; i >= 0; i-- {
-			c := res[i]
-			if m.FindLabel("node") == c.Name {
-				r = res[i]
-				return r, false
-			}
-		}
-		return NewResource("node"), true
-	}
-	return nil, true
-}
-
-var EndpointMergeHook ResourceMergeHook = func(m *MetricMatcher, res ResourceList) (r *Resource, addFlag bool) {
-	if m.Type == "endpoint_address" || m.Type == "endpoint_port" {
-		for i := len(res) - 1; i >= 0; i-- {
-			c := res[i]
-			if m.FindLabel("namespace") == c.Namespace && m.FindLabel("endpoint") == c.Name {
-				r = res[i]
-				return r, false
-			}
-		}
-		return NewResource("endpoint"), true
-		/*
-			for i, c := range res {
-				if m.FindLabel("namespace") == c.Namespace && m.FindLabel("endpoint") == c.Type {
-					r = res[i]
-					return r, false
-				}
-			}
-			return NewResource("endpoint"), true
-		*/
-	}
-	return nil, true
-}
+var HookList []ResourceMergeHook
 
 func ConvertToResource(r []*MetricMatcher, hooks ...ResourceMergeHook) []*Resource {
 	var res []*Resource
 	if len(hooks) == 0 {
-		hooks = append(hooks, EndpointMergeHook, NodeMergeHook)
+		hooks = append(hooks, HookList...)
 	}
 
 	for _, m := range r {

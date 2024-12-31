@@ -9,6 +9,8 @@ import (
 
 	cmdx "github.com/esonhugh/k8spider/cmd"
 	"github.com/esonhugh/k8spider/pkg/metrics"
+	"github.com/esonhugh/k8spider/pkg/metrics/coredns"
+	kube_state_metrics "github.com/esonhugh/k8spider/pkg/metrics/kube-state-metrics"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -31,7 +33,7 @@ var MetricCmd = &cobra.Command{
 			return
 		}
 		log.Debugf("parse metrics from %v", MetricOpt.From)
-		rule := metrics.DefaultMatchRules()
+		rule := append(kube_state_metrics.DefaultMatchRules(), coredns.CoreDNSMatchRules()...)
 		if err := rule.Compile(); err != nil {
 			log.Fatalf("compile rule failed: %v", err)
 		}

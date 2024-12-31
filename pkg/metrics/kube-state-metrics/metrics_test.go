@@ -1,10 +1,12 @@
-package metrics
+package kube_state_metrics
 
 import (
 	"bufio"
 	"encoding/json"
 	"os"
 	"testing"
+
+	"github.com/esonhugh/k8spider/pkg/metrics"
 )
 
 func TestMetrics(t *testing.T) {
@@ -27,7 +29,7 @@ func TestMetrics(t *testing.T) {
 		t.Fatalf("open output file failed: %v", err)
 	}
 	defer output.Close()
-	var rx []*MetricMatcher
+	var rx []*metrics.MetricMatcher
 	for scanner.Scan() {
 		line := scanner.Text()
 		res, err := rule.Match(line)
@@ -47,11 +49,11 @@ func TestConvertToResource(t *testing.T) {
 		t.Fatalf("open output file failed: %v", err)
 	}
 	defer output.Close()
-	var rules []*MetricMatcher
+	var rules []*metrics.MetricMatcher
 	scanner := bufio.NewScanner(output)
 	for scanner.Scan() {
 		line := scanner.Text()
-		var r *MetricMatcher
+		var r *metrics.MetricMatcher
 		e := json.Unmarshal([]byte(line), &r)
 		if e != nil {
 			t.Logf("unmarshal failed: %v", e)
@@ -59,6 +61,6 @@ func TestConvertToResource(t *testing.T) {
 		}
 		rules = append(rules, r)
 	}
-	var res ResourceList = ConvertToResource(rules)
+	var res metrics.ResourceList = metrics.ConvertToResource(rules)
 	res.Print(os.Stderr)
 }

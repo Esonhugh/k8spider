@@ -17,7 +17,6 @@ var Opts = struct {
 	PodCidr string
 
 	DnsServer  string
-	SvcDomains []string
 	Zone       string
 	OutputFile string
 	Verbose    int
@@ -45,15 +44,20 @@ func defaultPodCidr() string {
 	return "10.0.0.1/16"
 }
 
+func defaultCidr() string {
+	if host := os.Getenv("KUBERNETES_SERVICE_HOST"); host != "" {
+		return host + "/16"
+	}
+	return "10.96.0.1/16"
+}
+
 func init() {
 
-	RootCmd.PersistentFlags().StringVarP(&Opts.Cidr, "cidr", "c", os.Getenv("KUBERNETES_SERVICE_HOST")+"/16", "cidr like: 192.168.0.1/16")
+	RootCmd.PersistentFlags().StringVarP(&Opts.Cidr, "cidr", "c", defaultCidr(), "cidr like: 192.168.0.1/16")
 	RootCmd.PersistentFlags().StringVarP(&Opts.PodCidr, "pod-cidr", "p", defaultPodCidr(), "pod cidr list, watch out for the network interface name, default is eth0")
 
 	RootCmd.PersistentFlags().StringVarP(&Opts.DnsServer, "dns-server", "d", "", "dns server")
 	RootCmd.PersistentFlags().IntVarP(&pkg.DnsTimeout, "dns-timeout", "i", 2, "dns timeout")
-
-	RootCmd.PersistentFlags().StringSliceVarP(&Opts.SvcDomains, "svc-domains", "s", []string{}, "service domains, like: kubernetes.default,etcd.default don't add zone like svc.cluster.local")
 
 	RootCmd.PersistentFlags().StringVarP(&Opts.Zone, "zone", "z", "cluster.local", "zone")
 

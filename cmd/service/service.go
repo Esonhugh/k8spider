@@ -11,7 +11,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var Opts struct {
+	SvcDomains []string
+}
+
 func init() {
+	ServiceCmd.PersistentFlags().StringSliceVarP(&Opts.SvcDomains, "svc-domains", "s", []string{}, "service domains, like: kubernetes.default,etcd.default don't add zone like svc.cluster.local")
 	command.RootCmd.AddCommand(ServiceCmd)
 }
 
@@ -20,14 +25,14 @@ var ServiceCmd = &cobra.Command{
 	Aliases: []string{
 		"srv",
 	},
-	Short: "service is a tool to discover k8s services",
+	Short: "service is a tool to discover k8s services ports",
 	Run: func(cmd *cobra.Command, args []string) {
-		if command.Opts.Zone == "" || command.Opts.SvcDomains == nil || len(command.Opts.SvcDomains) == 0 {
+		if command.Opts.Zone == "" || Opts.SvcDomains == nil || len(Opts.SvcDomains) == 0 {
 			log.Warn("zone can't empty and svc-domains can't empty")
 			return
 		}
 		var records define.Records
-		for _, domain := range command.Opts.SvcDomains {
+		for _, domain := range Opts.SvcDomains {
 			records = append(records, define.Record{SvcDomain: fmt.Sprintf("%s.svc.%s", domain, command.Opts.Zone)})
 		}
 		records = scanner.ScanSvcForPorts(records)

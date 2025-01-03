@@ -1,6 +1,7 @@
-package subnet
+package service
 
 import (
+	"fmt"
 	"net"
 
 	command "github.com/esonhugh/k8spider/cmd"
@@ -14,11 +15,24 @@ import (
 )
 
 func init() {
-	command.RootCmd.AddCommand(SubNetCmd)
+	command.RootCmd.AddCommand(DNSSDCmd)
+	DNSSDCmd.AddCommand(SubNetCmd, ServiceCmd)
+	ServiceCmd.PersistentFlags().StringSliceVarP(&Opts.SvcDomains, "svc-domains", "s", []string{}, "service domains, like: kubernetes.default,etcd.default don't add zone like svc.cluster.local")
+}
+
+var DNSSDCmd = &cobra.Command{
+	Use: "dnssd",
+	Aliases: []string{
+		"sd",
+	},
+	Short: "dnssd is a subcommand to discover k8s dns-sd technique",
+	Run: func(cmd *cobra.Command, args []string) {
+		cmd.Help()
+	},
 }
 
 var SubNetCmd = &cobra.Command{
-	Use: "subnet",
+	Use: "ptr",
 	Aliases: []string{
 		"sub",
 		"s",
@@ -63,4 +77,28 @@ func RunMultiThread(net *net.IPNet, num int) (finalRecord define.Records) {
 		return
 	}
 	return
+}
+
+var Opts struct {
+	SvcDomains []string
+}
+
+var ServiceCmd = &cobra.Command{
+	Use: "srv",
+	Aliases: []string{
+		"service",
+	},
+	Short: "service is a tool to discover k8s services ports",
+	Run: func(cmd *cobra.Command, args []string) {
+		if command.Opts.Zone == "" || Opts.SvcDomains == nil || len(Opts.SvcDomains) == 0 {
+			log.Warn("zone can't empty and svc-domains can't empty")
+			return
+		}
+		var records define.Records
+		for _, domain := range Opts.SvcDomains {
+			records = append(records, define.Record{SvcDomain: fmt.Sprintf("%s.svc.%s", domain, command.Opts.Zone)})
+		}
+		records = scanner.ScanSvcForPorts(records)
+		printer.PrintResult(records, command.Opts.OutputFile)
+	},
 }

@@ -2,6 +2,7 @@ package all
 
 import (
 	"net"
+	"strings"
 
 	command "github.com/esonhugh/k8spider/cmd"
 	"github.com/esonhugh/k8spider/define"
@@ -42,8 +43,14 @@ var AllCmd = &cobra.Command{
 		} else {
 			log.Errorf("Transfer failed: %v", err)
 		}
+
 		// Service Discovery
 		ipNets, err := pkg.ParseStringToIPNet(command.Opts.Cidr)
+		if err != nil {
+			log.Warnf("ParseStringToIPNet failed: %v", err)
+			return
+		}
+		podNets, err := pkg.ParseStringToIPNet(command.Opts.PodCidr)
 		if err != nil {
 			log.Warnf("ParseStringToIPNet failed: %v", err)
 			return
@@ -51,9 +58,9 @@ var AllCmd = &cobra.Command{
 
 		var finalRecord define.Records
 		if command.Opts.MultiThreadingMode {
-			finalRecord = RunMultiThread(ipNets, command.Opts.ThreadingNum)
+			finalRecord = RunMultiThread(ipNets, podNets, command.Opts.ThreadingNum)
 		} else {
-			finalRecord = Run(ipNets)
+			finalRecord = Run(ipNets, podNets)
 		}
 		printer.PrintResult(finalRecord, command.Opts.OutputFile)
 
@@ -61,19 +68,26 @@ var AllCmd = &cobra.Command{
 	},
 }
 
-func Run(net *net.IPNet) (finalRecord define.Records) {
+func Run(net, pod *net.IPNet) (finalRecord define.Records) {
 	var records define.Records = scanner.ScanSubnet(net)
 	if records == nil || len(records) == 0 {
 		log.Warnf("ScanSubnet Found Nothing")
 		return
 	}
 	records = scanner.ScanSvcForPorts(records)
+	for r := range mutli.ScanNeighborSvc(pod, 1) {
+		finalRecord = append(finalRecord, r...)
+	}
 	return records
 }
 
-func RunMultiThread(net *net.IPNet, count int) (finalRecord define.Records) {
+func RunMultiThread(net, pod *net.IPNet, count int) (finalRecord define.Records) {
 	scan := mutli.ScanAll(net, count)
-	for r := range scan {
+	scan2 := mutli.ScanNeighborSvc(pod, count)
+	select {
+	case r := <-scan:
+		finalRecord = append(finalRecord, r...)
+	case r := <-scan2:
 		finalRecord = append(finalRecord, r...)
 	}
 	return
@@ -92,5 +106,10 @@ func PostRun(finalRecord define.Records) {
 	list = post.RecordsDumpFullService(finalRecord, command.Opts.Zone)
 	for _, svc := range list {
 		log.Infof("Service: %s", svc)
+	}
+	log.Info("Possible Pod and service ip maps")
+	maps := post.PodServiceMap(finalRecord)
+	for svc, ips := range maps {
+		log.Infof("service %s has ips %s", svc, strings.Join(ips, ","))
 	}
 }

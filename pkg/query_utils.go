@@ -15,6 +15,8 @@ var (
 	DnsTimeout  = 2
 	NetResolver = DefaultResolver()
 	Zone        string // Zone is the domain name of the cluster
+
+	Latency = 0
 )
 
 type SpiderResolver struct {
@@ -28,7 +30,7 @@ type SpiderResolver struct {
 func DefaultResolver() *SpiderResolver {
 	ctx, _ := context.WithTimeout(context.Background(), time.Duration(DnsTimeout)*time.Second) // I don't think if a inside cluster dns query has more than 2s latency.
 	return &SpiderResolver{
-		dns:      "<default-dns>",
+		dns:      "default-dns",
 		r:        net.DefaultResolver,
 		ctx:      ctx,
 		filter:   []*regexp.Regexp{},
@@ -106,11 +108,8 @@ func (s *SpiderResolver) PTRRecord(ip net.IP) []string {
 		log.Debugf("LookupAddr failed: %v", err)
 		return nil
 	}
+	time.Sleep(time.Duration(Latency) * time.Millisecond)
 	return s.filterStringArray(names)
-}
-
-func PTRRecord(ip net.IP) []string {
-	return NetResolver.PTRRecord(ip)
 }
 
 func (s *SpiderResolver) SRVRecord(svcDomain string) (string, []*net.SRV, error) {
@@ -122,28 +121,36 @@ func (s *SpiderResolver) SRVRecord(svcDomain string) (string, []*net.SRV, error)
 		}
 		finalsrv = append(finalsrv, srv)
 	}
+	time.Sleep(time.Duration(Latency) * time.Millisecond)
 	return cname, srvs, err
 }
 
 func (s *SpiderResolver) CustomSRVRecord(svcDomain string, service, proto string) (string, []*net.SRV, error) {
 	cname, srvs, err := s.r.LookupSRV(s.ctx, service, proto, svcDomain)
+	time.Sleep(time.Duration(Latency) * time.Millisecond)
 	return cname, srvs, err
+}
+
+func (s *SpiderResolver) ARecord(domain string) ([]net.IP, error) {
+	time.Sleep(time.Duration(Latency) * time.Millisecond)
+	return s.r.LookupIP(s.ctx, "ip", domain)
+}
+
+func (s *SpiderResolver) TXTRecord(domain string) ([]string, error) {
+	time.Sleep(time.Duration(Latency) * time.Millisecond)
+	return s.r.LookupTXT(s.ctx, domain)
+}
+
+func PTRRecord(ip net.IP) []string {
+	return NetResolver.PTRRecord(ip)
 }
 
 func SRVRecord(svcDomain string) (string, []*net.SRV, error) {
 	return NetResolver.SRVRecord(svcDomain)
 }
 
-func (s *SpiderResolver) ARecord(domain string) ([]net.IP, error) {
-	return s.r.LookupIP(s.ctx, "ip", domain)
-}
-
 func ARecord(domain string) (ips []net.IP, err error) {
 	return NetResolver.ARecord(domain)
-}
-
-func (s *SpiderResolver) TXTRecord(domain string) ([]string, error) {
-	return s.r.LookupTXT(s.ctx, domain)
 }
 
 func TXTRecord(domain string) (txts []string, err error) {

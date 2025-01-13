@@ -1,0 +1,19 @@
+# HELP coredns_local_localhost_requests_total Counter of localhost.<domain> requests.
+# TYPE coredns_local_localhost_requests_total counter
+coredns_local_localhost_requests_total 0
+# HELP coredns_panics_total A metrics that counts the number of panics.
+# TYPE coredns_panics_total counter
+coredns_panics_total 0
+# HELP coredns_plugin_enabled A metric that indicates whether a plugin is enabled on per server and zone basis.
+# TYPE coredns_plugin_enabled gauge
+coredns_plugin_enabled{name="cache",server="dns://:53",view="",zone="."} 1
+coredns_plugin_enabled{name="errors",server="dns://:53",view="",zone="."} 1
+coredns_plugin_enabled{name="forward",server="dns://:53",view="",zone="."} 1
+coredns_plugin_enabled{name="hosts",server="dns://:53",view="",zone="."} 1
+coredns_plugin_enabled{name="kubernetes",server="dns://:53",view="",zone="."} 1
+coredns_plugin_enabled{name="loadbalance",server="dns://:53",view="",zone="."} 1
+coredns_plugin_enabled{name="loop",server="dns://:53",view="",zone="."} 1
+coredns_plugin_enabled{name="prometheus",server="dns://:53",view="",zone="."} 1
+# HELP coredns_reload_failed_total Counter of the number of failed reload attempts.
+# TYPE coredns_reload_failed_total counter
+coredns_reload_failed_total 0

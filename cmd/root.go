@@ -3,7 +3,9 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
+	"strings"
 
 	"github.com/esonhugh/k8spider/pkg"
 	log "github.com/sirupsen/logrus"
@@ -11,9 +13,10 @@ import (
 )
 
 var Opts = struct {
-	Cidr       string
+	Cidr    string
+	PodCidr string
+
 	DnsServer  string
-	SvcDomains []string
 	Zone       string
 	OutputFile string
 	Verbose    int
@@ -27,14 +30,34 @@ var Opts = struct {
 	FilterStrings []string
 }{}
 
+func defaultPodCidr() string {
+	interfaces, _ := net.Interfaces()
+	for _, i := range interfaces {
+		if i.Name == "eth0" {
+			addrs, _ := i.Addrs()
+			if addrs != nil || len(addrs) > 0 {
+				ip := strings.Split(addrs[0].String(), "/")[0]
+				return fmt.Sprintf("%v/16", ip)
+			}
+		}
+	}
+	return "10.0.0.1/16"
+}
+
+func defaultCidr() string {
+	if host := os.Getenv("KUBERNETES_SERVICE_HOST"); host != "" {
+		return host + "/16"
+	}
+	return "10.96.0.1/16"
+}
+
 func init() {
 
-	RootCmd.PersistentFlags().StringVarP(&Opts.Cidr, "cidr", "c", os.Getenv("KUBERNETES_SERVICE_HOST")+"/16", "cidr like: 192.168.0.1/16")
+	RootCmd.PersistentFlags().StringVarP(&Opts.Cidr, "cidr", "c", defaultCidr(), "cidr like: 192.168.0.1/16")
+	RootCmd.PersistentFlags().StringVarP(&Opts.PodCidr, "pod-cidr", "p", defaultPodCidr(), "pod cidr list, watch out for the network interface name, default is eth0")
 
 	RootCmd.PersistentFlags().StringVarP(&Opts.DnsServer, "dns-server", "d", "", "dns server")
 	RootCmd.PersistentFlags().IntVarP(&pkg.DnsTimeout, "dns-timeout", "i", 2, "dns timeout")
-
-	RootCmd.PersistentFlags().StringSliceVarP(&Opts.SvcDomains, "svc-domains", "s", []string{}, "service domains, like: kubernetes.default,etcd.default don't add zone like svc.cluster.local")
 
 	RootCmd.PersistentFlags().StringVarP(&Opts.Zone, "zone", "z", "cluster.local", "zone")
 
@@ -49,6 +72,8 @@ func init() {
 
 	RootCmd.PersistentFlags().StringSliceVarP(&Opts.FilterRules, "filter-rules", "F", []string{}, "filter regexp rules")
 	RootCmd.PersistentFlags().StringSliceVarP(&Opts.FilterStrings, "filter-strings", "f", []string{}, "filter contained strings")
+
+	RootCmd.PersistentFlags().IntVarP(&pkg.Latency, "latency", "l", 0, "Latency control while each dns query in ms, default 0ms")
 }
 
 var RootCmd = &cobra.Command{

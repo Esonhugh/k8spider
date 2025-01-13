@@ -1,48 +1,12 @@
 package metrics
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/esonhugh/k8spider/define"
+)
 
 type MatchRules []*MetricMatcher
-
-func GenerateMatchRules() MatchRules {
-	return make(MatchRules, 0)
-}
-
-func DefaultMatchRules() MatchRules {
-	return []*MetricMatcher{
-		NewMetricMatcher("configmap").AddLabel("namespace").AddLabel("configmap"),
-		NewMetricMatcher("secret").AddLabel("namespace").AddLabel("secret"),
-
-		NewMetricMatcher("node").AddLabel("node").AddLabel("kernel_version").
-			AddLabel("os_image").AddLabel("container_runtime_version").
-			AddLabel("provider_id").AddLabel("internal_ip"),
-
-		NewMetricMatcher("pod").AddLabel("namespace").AddLabel("pod").AddLabel("node").
-			AddLabel("host_ip").AddLabel("pod_ip"),
-		NewMetricMatcher("container").SetHeader("kube_pod_container_info").AddLabel("namespace").
-			AddLabel("pod").AddLabel("container").AddLabel("image_spec").AddLabel("image"),
-		NewMetricMatcher("pod_init_container").AddLabel("namespace").AddLabel("pod").
-			AddLabel("container").AddLabel("image_spec").AddLabel("image"),
-
-		NewMetricMatcher("cronjob").AddLabel("namespace").AddLabel("cronjob").
-			AddLabel("schedule").AddLabel("concurrency_policy"),
-
-		NewMetricMatcher("service_account").SetHeader("kube_pod_service_account").
-			AddLabel("namespace").AddLabel("pod").AddLabel("service_account"),
-
-		NewMetricMatcher("service").AddLabel("namespace").AddLabel("service").
-			AddLabel("cluster_ip").AddLabel("external_name").AddLabel("load_balancer_ip"),
-		NewMetricMatcher("endpoint_address").SetHeader("kube_endpoint_address").
-			AddLabel("namespace").AddLabel("endpoint").AddLabel("ip"),
-		NewMetricMatcher("endpoint_port").SetHeader("kube_endpoint_ports").
-			AddLabel("namespace").AddLabel("endpoint").AddLabel("port_number"),
-
-		NewMetricMatcher("persistentvolume").AddLabel("persistentvolume").AddLabel("storageclass").
-			AddLabel("gce_persistent_disk_name").AddLabel("ebs_volume_id").AddLabel("azure_disk_name").
-			AddLabel("nfs_server").AddLabel("nfs_path").AddLabel("csi_driver").AddLabel("csi_volume_handle").
-			AddLabel("local_path").AddLabel("local_fs").AddLabel("host_path").AddLabel("host_path_type"),
-	}
-}
 
 func (m MatchRules) Compile() error {
 	var err error = nil
@@ -61,8 +25,53 @@ func (m MatchRules) Match(target string) (*MetricMatcher, error) {
 		if e != nil {
 			continue
 		} else {
-			return r, nil
+			return r.CopyData(), nil
 		}
 	}
 	return nil, errors.New("no match found")
+}
+
+type ResourceMergeHook func(m *MetricMatcher, res define.ResourceList) (r *define.Resource, addFlag bool)
+
+var HookList []ResourceMergeHook
+
+func ConvertToResource(r []*MetricMatcher, hooks ...ResourceMergeHook) []*define.Resource {
+	var res []*define.Resource
+	if len(hooks) == 0 {
+		hooks = append(hooks, HookList...)
+	}
+
+	for _, m := range r {
+		var resource *define.Resource
+		var addFlag = true
+
+		for _, hook := range hooks {
+			resource, addFlag = hook(m, res)
+			if resource != nil {
+				break
+			}
+		}
+
+		resourceType := m.Type
+		if resource != nil {
+			resourceType = resource.Type
+		}
+		if resource == nil && addFlag {
+			resource = define.NewResource(resourceType)
+		}
+
+		resource.Namespace = m.FindLabel("namespace")
+		resource.Name = m.FindLabel(m.LabelNameOfName())
+
+		// merge endpoint_address and endpoint_port
+		for _, l := range m.Labels {
+			if l.Key != "namespace" && l.Key != m.LabelNameOfName() {
+				resource.AddSpec(l.Key, l.Value)
+			}
+		}
+		if addFlag {
+			res = append(res, resource)
+		}
+	}
+	return res
 }

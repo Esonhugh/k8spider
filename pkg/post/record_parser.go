@@ -63,3 +63,30 @@ func GetNamespaceFromDomain(domain string, zone string) string {
 	}
 	return ""
 }
+
+func IsPodServiceFormat(domain string) bool {
+	str := strings.Split(dns.Fqdn(domain), ".")
+	if len(str) > 5 {
+		// 0:IP 1:ServiceName 2:Namespace 3:svc 4:cluster 5:local 6:
+		if str[3] == "svc" {
+			return true
+		}
+	}
+	return false
+}
+
+func GetPodServiceRawService(domain string) string {
+	str := strings.Split(dns.Fqdn(domain), ".")
+	return strings.Join(str[1:], ".")
+}
+
+func PodServiceMap(BaseService define.Records) map[string][]string {
+	result := make(map[string][]string)
+	for _, r := range BaseService {
+		if r.SvcDomain != "" {
+			svcDomain := GetPodServiceRawService(r.SvcDomain)
+			result[svcDomain] = append(result[svcDomain], r.Ip.String())
+		}
+	}
+	return result
+}

@@ -12,7 +12,7 @@ import (
 var queryType string
 
 func init() {
-	DNSCmd.PersistentFlags().StringVarP(&queryType, "type", "t", "A", "query type")
+	DNSCmd.PersistentFlags().StringVarP(&queryType, "type", "x", "A", "query type")
 	command.RootCmd.AddCommand(DNSCmd)
 }
 
@@ -40,7 +40,7 @@ var DNSCmd = &cobra.Command{
 				log.Warnf("Query %s failed: %v", query, err)
 				continue
 			}
-			log.Infof("Query [%d] %s: %v", queryType, query, res)
+			log.Infof("Query [%s] %s: %v", queryType, query, res)
 		}
 	},
 }

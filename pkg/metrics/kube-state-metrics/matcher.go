@@ -1,6 +1,9 @@
 package kube_state_metrics
 
-import "github.com/esonhugh/k8spider/pkg/metrics"
+import (
+	"github.com/esonhugh/k8spider/define"
+	"github.com/esonhugh/k8spider/pkg/metrics"
+)
 
 func DefaultMatchRules() metrics.MatchRules {
 	return []*metrics.MetricMatcher{
@@ -55,7 +58,7 @@ func DefaultMatchRules() metrics.MatchRules {
 	}
 }
 
-var NodeMergeHook metrics.ResourceMergeHook = func(m *metrics.MetricMatcher, res metrics.ResourceList) (r *metrics.Resource, addFlag bool) {
+var NodeMergeHook metrics.ResourceMergeHook = func(m *metrics.MetricMatcher, res define.ResourceList) (r *define.Resource, addFlag bool) {
 	if m.Type == "node" || m.Type == "node_role" {
 		for i := len(res) - 1; i >= 0; i-- {
 			c := res[i]
@@ -64,12 +67,12 @@ var NodeMergeHook metrics.ResourceMergeHook = func(m *metrics.MetricMatcher, res
 				return r, false
 			}
 		}
-		return metrics.NewResource("node"), true
+		return define.NewResource("node"), true
 	}
 	return nil, true
 }
 
-var EndpointMergeHook metrics.ResourceMergeHook = func(m *metrics.MetricMatcher, res metrics.ResourceList) (r *metrics.Resource, addFlag bool) {
+var EndpointMergeHook metrics.ResourceMergeHook = func(m *metrics.MetricMatcher, res define.ResourceList) (r *define.Resource, addFlag bool) {
 	if m.Type == "endpoint_address" || m.Type == "endpoint_port" {
 		for i := len(res) - 1; i >= 0; i-- {
 			c := res[i]
@@ -78,7 +81,7 @@ var EndpointMergeHook metrics.ResourceMergeHook = func(m *metrics.MetricMatcher,
 				return r, false
 			}
 		}
-		return metrics.NewResource("endpoint"), true
+		return define.NewResource("endpoint"), true
 		/*
 			for i, c := range res {
 				if m.FindLabel("namespace") == c.Namespace && m.FindLabel("endpoint") == c.Type {

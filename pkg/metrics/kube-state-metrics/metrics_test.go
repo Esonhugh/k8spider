@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/esonhugh/k8spider/define"
 	"github.com/esonhugh/k8spider/pkg/metrics"
 )
 
@@ -61,6 +62,6 @@ func TestConvertToResource(t *testing.T) {
 		}
 		rules = append(rules, r)
 	}
-	var res metrics.ResourceList = metrics.ConvertToResource(rules)
+	var res define.ResourceList = metrics.ConvertToResource(rules)
 	res.Print(os.Stderr)
 }

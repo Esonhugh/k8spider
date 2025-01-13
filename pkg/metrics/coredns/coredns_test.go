@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/esonhugh/k8spider/define"
 	"github.com/esonhugh/k8spider/pkg/metrics"
 )
 
@@ -35,7 +36,7 @@ func TestCoreDNSMatchRules(t *testing.T) {
 			t.Logf("matched: %s", res.DumpString())
 		}
 	}
-	e := metrics.ConvertToResource(resList, MergeCoreDnsPlugin)
+	e := define.ConvertToResource(resList, MergeCoreDnsPlugin)
 	for _, r := range e {
 		t.Logf("resource: %s", r.JSON())
 	}

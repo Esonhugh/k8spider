@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	cmdx "github.com/esonhugh/k8spider/cmd"
+	"github.com/esonhugh/k8spider/define"
 	"github.com/esonhugh/k8spider/pkg/metrics"
 	"github.com/esonhugh/k8spider/pkg/metrics/coredns"
 	kube_state_metrics "github.com/esonhugh/k8spider/pkg/metrics/kube-state-metrics"
@@ -20,13 +21,13 @@ var MetricOpt struct {
 }
 
 func init() {
-	cmdx.RootCmd.AddCommand(MetricCmd)
-	MetricCmd.PersistentFlags().StringVarP(&MetricOpt.From, "metric", "m", "", "metrics from (file / remote url)")
+	cmdx.RootCmd.AddCommand(MetricsCmd)
+	MetricsCmd.PersistentFlags().StringVarP(&MetricOpt.From, "metric", "m", "", "metrics from (file / remote url)")
 
 }
 
-var MetricCmd = &cobra.Command{
-	Use:   "metric",
+var MetricsCmd = &cobra.Command{
+	Use:   "metrics",
 	Short: "parse kube stat metrics to readable resource",
 	Run: func(cmd *cobra.Command, args []string) {
 		if MetricOpt.From == "" {
@@ -75,7 +76,7 @@ var MetricCmd = &cobra.Command{
 		if err := scanner.Err(); err != nil {
 			log.Warnf("scan metrics failed and break out, reason: %v", err)
 		}
-		var res metrics.ResourceList = metrics.ConvertToResource(rx)
+		var res define.ResourceList = metrics.ConvertToResource(rx)
 		log.Debugf("parse metrics completed, start to print result\n")
 
 		res.Print(ot)

@@ -1,6 +1,9 @@
 package coredns
 
-import "github.com/esonhugh/k8spider/pkg/metrics"
+import (
+	"github.com/esonhugh/k8spider/define"
+	"github.com/esonhugh/k8spider/pkg/metrics"
+)
 
 func init() {
 	metrics.HookList = append(metrics.HookList, MergeCoreDnsPlugin)
@@ -13,7 +16,7 @@ func CoreDNSMatchRules() metrics.MatchRules {
 	}
 }
 
-var MergeCoreDnsPlugin metrics.ResourceMergeHook = func(m *metrics.MetricMatcher, res metrics.ResourceList) (r *metrics.Resource, addFlag bool) {
+var MergeCoreDnsPlugin metrics.ResourceMergeHook = func(m *metrics.MetricMatcher, res define.ResourceList) (r *define.Resource, addFlag bool) {
 	if m.Type == "coredns_plugin" {
 		for i := len(res) - 1; i >= 0; i-- {
 			if m.Type == "coredns_plugin" {
@@ -21,7 +24,7 @@ var MergeCoreDnsPlugin metrics.ResourceMergeHook = func(m *metrics.MetricMatcher
 				return r, false
 			}
 		}
-		return metrics.NewResource("coredns_plugin"), true
+		return define.NewResource("coredns_plugin"), true
 	}
 	return nil, true
 }

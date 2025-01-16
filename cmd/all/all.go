@@ -57,28 +57,11 @@ var AllCmd = &cobra.Command{
 		}
 
 		var finalRecord define.Records
-		if command.Opts.MultiThreadingMode {
-			finalRecord = RunMultiThread(ipNets, podNets, command.Opts.ThreadingNum)
-		} else {
-			finalRecord = Run(ipNets, podNets)
-		}
+		finalRecord = RunMultiThread(ipNets, podNets, command.Opts.ThreadingNum)
 		printer.PrintResult(finalRecord, command.Opts.OutputFile)
 
 		PostRun(finalRecord)
 	},
-}
-
-func Run(net, pod *net.IPNet) (finalRecord define.Records) {
-	var records define.Records = scanner.ScanSubnet(net)
-	if records == nil || len(records) == 0 {
-		log.Warnf("ScanSubnet Found Nothing")
-		return
-	}
-	records = scanner.ScanSvcForPorts(records)
-	for r := range mutli.ScanNeighborSvc(pod, 1) {
-		finalRecord = append(finalRecord, r...)
-	}
-	return records
 }
 
 func RunMultiThread(net, pod *net.IPNet, count int) (finalRecord define.Records) {

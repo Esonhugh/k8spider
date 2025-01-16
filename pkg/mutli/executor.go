@@ -13,7 +13,7 @@ func ScanAll(subnet *net.IPNet, num int) (result <-chan []define.Record) {
 }
 
 func ScanNeighbor(namespace []string, subnet *net.IPNet, num int) <-chan []define.Record {
-	subs := NewNeighborScanner(ScanPods, num)
+	subs := NewNeighborScanner(num)
 	if len(namespace) == 1 {
 		return subs.ScanSingleNeighbor(namespace[0], subnet)
 	}
@@ -21,6 +21,6 @@ func ScanNeighbor(namespace []string, subnet *net.IPNet, num int) <-chan []defin
 }
 
 func ScanNeighborSvc(subnet *net.IPNet, num int) <-chan []define.Record {
-	subs := NewNeighborScanner(ScanSvc, num)
+	subs := NewNeighborScanner(num)
 	return ScanServiceWithChan(subs.ScanSvcNeighbor(subnet))
 }

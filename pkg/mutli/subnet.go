@@ -1,14 +1,12 @@
 package mutli
 
 import (
-	"net"
-	"sync"
-	"time"
-
 	"github.com/esonhugh/k8spider/define"
 	"github.com/esonhugh/k8spider/pkg"
 	"github.com/esonhugh/k8spider/pkg/scanner"
 	log "github.com/sirupsen/logrus"
+	"net"
+	"sync"
 )
 
 type SubnetScanner struct {
@@ -16,16 +14,10 @@ type SubnetScanner struct {
 	count int
 }
 
-func NewSubnetScanner(threading ...int) *SubnetScanner {
-	if len(threading) == 0 {
-		return &SubnetScanner{
-			wg: new(sync.WaitGroup),
-		}
-	} else {
-		return &SubnetScanner{
-			wg:    new(sync.WaitGroup),
-			count: threading[0],
-		}
+func NewSubnetScanner(threading int) *SubnetScanner {
+	return &SubnetScanner{
+		wg:    new(sync.WaitGroup),
+		count: threading,
 	}
 }
 
@@ -39,14 +31,21 @@ func (s *SubnetScanner) ScanSubnet(subnet *net.IPNet) <-chan []define.Record {
 		// if subnets, err := pkg.SubnetShift(subnet, 4); err != nil {
 		if subnets, err := pkg.SubnetInto(subnet, s.count); err != nil {
 			log.Errorf("Subnet split into %v failed, fallback to single mode, reason: %v", s.count, err)
-			go s.scan(subnet, out)
+			s.wg.Add(1)
+			go func() {
+				defer s.wg.Done()
+				s.scan(subnet, out)
+			}()
 		} else {
 			log.Debugf("Subnet split into %v success", len(subnets))
+			s.wg.Add(len(subnets))
 			for _, sn := range subnets {
-				go s.scan(sn, out)
+				go func(sn *net.IPNet) {
+					defer s.wg.Done()
+					s.scan(sn, out)
+				}(sn)
 			}
 		}
-		time.Sleep(10 * time.Millisecond) // wait for all goroutines to start
 		s.wg.Wait()
 		close(out)
 	}()
@@ -54,10 +53,8 @@ func (s *SubnetScanner) ScanSubnet(subnet *net.IPNet) <-chan []define.Record {
 }
 
 func (s *SubnetScanner) scan(subnet *net.IPNet, to chan []define.Record) {
-	s.wg.Add(1)
 	// to <- scanner.ScanSubnet(subnet)
 	for _, ip := range pkg.ParseIPNetToIPs(subnet) {
 		to <- scanner.ScanSingleIP(ip)
 	}
-	s.wg.Done()
 }

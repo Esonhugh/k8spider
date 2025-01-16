@@ -16,7 +16,7 @@ test: build
 	$(BUILD_DIR)/$(MAIN_PROGRAM_NAME) dnssd --help
 	$(BUILD_DIR)/$(MAIN_PROGRAM_NAME) dnssd ptr --help
 	$(BUILD_DIR)/$(MAIN_PROGRAM_NAME) dnssd srv --help
-	$(BUILD_DIR)/$(MAIN_PROGRAM_NAME) metric --help
+	$(BUILD_DIR)/$(MAIN_PROGRAM_NAME) metrics --help
 	$(BUILD_DIR)/$(MAIN_PROGRAM_NAME) neighbor --help
 	$(BUILD_DIR)/$(MAIN_PROGRAM_NAME) neighbor pod --help
 	$(BUILD_DIR)/$(MAIN_PROGRAM_NAME) neighbor svc --help

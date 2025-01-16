@@ -88,6 +88,8 @@ var RootCmd = &cobra.Command{
 
 		if Opts.DnsServer != "" {
 			pkg.NetResolver = pkg.WarpDnsServer(Opts.DnsServer)
+		} else {
+			pkg.NetResolver = pkg.DefaultResolver()
 		}
 		for _, rules := range Opts.FilterRules {
 			pkg.NetResolver.SetFilter(rules)

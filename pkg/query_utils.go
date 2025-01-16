@@ -13,7 +13,7 @@ import (
 
 var (
 	DnsTimeout  = 2
-	NetResolver = DefaultResolver()
+	NetResolver *SpiderResolver
 	Zone        string // Zone is the domain name of the cluster
 
 	Latency = 0

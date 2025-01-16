@@ -2,14 +2,14 @@ package mutli
 
 import (
 	"fmt"
+	"net"
+	"sync"
+
 	"github.com/esonhugh/k8spider/define"
 	"github.com/esonhugh/k8spider/pkg"
 	"github.com/esonhugh/k8spider/pkg/post"
 	"github.com/esonhugh/k8spider/pkg/scanner"
 	log "github.com/sirupsen/logrus"
-	"net"
-	"strings"
-	"sync"
 )
 
 type NeighborScanner struct {
@@ -124,7 +124,7 @@ func (s *NeighborScanner) scanSvc(subnet *net.IPNet, to chan []define.Record) {
 			if post.IsPodServiceFormat(host) {
 				newRecord := define.Record{
 					Ip:        ip,
-					SvcDomain: strings.SplitN(host, ".", 1)[1],
+					SvcDomain: post.GetPodServiceRawService(host),
 				}
 				to <- []define.Record{newRecord}
 			} else {

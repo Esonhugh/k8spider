@@ -86,10 +86,6 @@ var RootCmd = &cobra.Command{
 		// Set pkg global config
 		pkg.Zone = Opts.Zone
 
-		// debug print option data
-		opt, _ := json.MarshalIndent(Opts, "", "  ")
-		log.Tracef("Opts: %v", string(opt))
-
 		if Opts.DnsServer != "" {
 			pkg.NetResolver = pkg.WarpDnsServer(Opts.DnsServer)
 		}
@@ -98,6 +94,10 @@ var RootCmd = &cobra.Command{
 		}
 		for _, rules := range Opts.FilterStrings {
 			pkg.NetResolver.SetContainsFilter(rules)
+		}
+
+		if !Opts.MultiThreadingMode {
+			Opts.ThreadingNum = 1
 		}
 		// Check if current environment is a kubernetes cluster
 		// If the command is whereisdns, which means DNS is not sure , so skip this check!
@@ -112,6 +112,10 @@ var RootCmd = &cobra.Command{
 		} else {
 			log.Tracef("kubernetes environment checking bypassed")
 		}
+
+		// debug print option data
+		opt, _ := json.MarshalIndent(Opts, "", "  ")
+		log.Tracef("Opts: %v", string(opt))
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		_ = cmd.Help()

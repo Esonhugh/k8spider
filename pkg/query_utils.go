@@ -6,6 +6,7 @@ import (
 	"net"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -25,6 +26,8 @@ type SpiderResolver struct {
 	r        *net.Resolver
 	filter   []*regexp.Regexp
 	contains []string
+
+	lock *sync.Mutex
 }
 
 func DefaultResolver() *SpiderResolver {
@@ -103,6 +106,8 @@ func (s *SpiderResolver) CurrentDNS() string {
 }
 
 func (s *SpiderResolver) PTRRecord(ip net.IP) []string {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	names, err := s.r.LookupAddr(s.ctx, ip.String())
 	if err != nil {
 		log.Debugf("LookupAddr failed: %v", err)
@@ -113,6 +118,8 @@ func (s *SpiderResolver) PTRRecord(ip net.IP) []string {
 }
 
 func (s *SpiderResolver) SRVRecord(svcDomain string) (string, []*net.SRV, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	cname, srvs, err := s.r.LookupSRV(s.ctx, "", "", svcDomain)
 	var finalsrv []*net.SRV
 	for _, srv := range srvs {
@@ -126,17 +133,23 @@ func (s *SpiderResolver) SRVRecord(svcDomain string) (string, []*net.SRV, error)
 }
 
 func (s *SpiderResolver) CustomSRVRecord(svcDomain string, service, proto string) (string, []*net.SRV, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	cname, srvs, err := s.r.LookupSRV(s.ctx, service, proto, svcDomain)
 	time.Sleep(time.Duration(Latency) * time.Millisecond)
 	return cname, srvs, err
 }
 
 func (s *SpiderResolver) ARecord(domain string) ([]net.IP, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	time.Sleep(time.Duration(Latency) * time.Millisecond)
 	return s.r.LookupIP(s.ctx, "ip", domain)
 }
 
 func (s *SpiderResolver) TXTRecord(domain string) ([]string, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 	time.Sleep(time.Duration(Latency) * time.Millisecond)
 	return s.r.LookupTXT(s.ctx, domain)
 }

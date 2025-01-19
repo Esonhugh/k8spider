@@ -3,11 +3,9 @@ package mutli
 import (
 	"net"
 	"sync"
-	"time"
 
 	"github.com/esonhugh/k8spider/define"
 	"github.com/esonhugh/k8spider/pkg"
-	"github.com/esonhugh/k8spider/pkg/scanner"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -16,48 +14,57 @@ type SubnetScanner struct {
 	count int
 }
 
-func NewSubnetScanner(threading ...int) *SubnetScanner {
-	if len(threading) == 0 {
-		return &SubnetScanner{
-			wg: new(sync.WaitGroup),
-		}
-	} else {
-		return &SubnetScanner{
-			wg:    new(sync.WaitGroup),
-			count: threading[0],
-		}
+func NewSubnetScanner(threading int) *SubnetScanner {
+	return &SubnetScanner{
+		wg:    new(sync.WaitGroup),
+		count: threading,
 	}
 }
 
-func (s *SubnetScanner) ScanSubnet(subnet *net.IPNet) <-chan []define.Record {
+func (s *SubnetScanner) ScanSubnet(subnet *net.IPNet) <-chan define.Record {
 	if subnet == nil {
 		log.Debugf("subnet is nil")
 		return nil
 	}
-	out := make(chan []define.Record, 100)
+	out := make(chan define.Record, 100)
 	go func() {
 		// if subnets, err := pkg.SubnetShift(subnet, 4); err != nil {
 		if subnets, err := pkg.SubnetInto(subnet, s.count); err != nil {
 			log.Errorf("Subnet split into %v failed, fallback to single mode, reason: %v", s.count, err)
-			go s.scan(subnet, out)
+			s.wg.Add(1)
+			go func() {
+				defer s.wg.Done()
+				s.scan(subnet, out)
+			}()
 		} else {
 			log.Debugf("Subnet split into %v success", len(subnets))
+			s.wg.Add(len(subnets))
 			for _, sn := range subnets {
-				go s.scan(sn, out)
+				go func(sn *net.IPNet) {
+					defer s.wg.Done()
+					s.scan(sn, out)
+				}(sn)
 			}
 		}
-		time.Sleep(10 * time.Millisecond) // wait for all goroutines to start
 		s.wg.Wait()
+		log.Tracef("all %v subnets done", subnet.String())
 		close(out)
 	}()
 	return out
 }
 
-func (s *SubnetScanner) scan(subnet *net.IPNet, to chan []define.Record) {
-	s.wg.Add(1)
-	// to <- scanner.ScanSubnet(subnet)
+func (s *SubnetScanner) scan(subnet *net.IPNet, to chan define.Record) {
+	log.Tracef("scan %v thread begin", subnet.String())
 	for _, ip := range pkg.ParseIPNetToIPs(subnet) {
-		to <- scanner.ScanSingleIP(ip)
+		ptr := pkg.PTRRecord(ip)
+		if len(ptr) > 0 {
+			for _, domain := range ptr {
+				log.Infof("PTRrecord %v --> %v", subnet, domain)
+				r := define.Record{Ip: ip, SvcDomain: domain}
+				to <- r
+			}
+		}
 	}
-	s.wg.Done()
+	log.Tracef("scan %v thread done", subnet.String())
+	return
 }

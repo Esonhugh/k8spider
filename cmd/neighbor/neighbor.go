@@ -93,7 +93,7 @@ func RunPod(ns []string, net *net.IPNet, num int) (finalRecord define.Records) {
 func RunSvc(net *net.IPNet, num int) (finalRecord define.Records) {
 	scan := mutli.ScanNeighborSvc(net, num)
 	for r := range scan {
-		finalRecord = append(finalRecord, r...)
+		finalRecord = append(finalRecord, r)
 	}
 	if len(finalRecord) == 0 {
 		log.Warn("ScanSubnet Found Nothing")

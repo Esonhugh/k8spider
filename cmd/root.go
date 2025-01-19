@@ -28,6 +28,9 @@ var Opts = struct {
 
 	FilterRules   []string
 	FilterStrings []string
+
+	DnsTimeout int
+	Latency    int
 }{}
 
 func defaultPodCidr() string {
@@ -57,7 +60,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&Opts.PodCidr, "pod-cidr", "p", defaultPodCidr(), "pod cidr list, watch out for the network interface name, default is eth0")
 
 	RootCmd.PersistentFlags().StringVarP(&Opts.DnsServer, "dns-server", "d", "", "dns server")
-	RootCmd.PersistentFlags().IntVarP(&pkg.DnsTimeout, "dns-timeout", "i", 2, "dns timeout")
+	RootCmd.PersistentFlags().IntVarP(&Opts.DnsTimeout, "dns-timeout", "i", 2, "dns timeout")
 
 	RootCmd.PersistentFlags().StringVarP(&Opts.Zone, "zone", "z", "cluster.local", "zone")
 
@@ -73,7 +76,7 @@ func init() {
 	RootCmd.PersistentFlags().StringSliceVarP(&Opts.FilterRules, "filter-rules", "F", []string{}, "filter regexp rules")
 	RootCmd.PersistentFlags().StringSliceVarP(&Opts.FilterStrings, "filter-strings", "f", []string{}, "filter contained strings")
 
-	RootCmd.PersistentFlags().IntVarP(&pkg.Latency, "latency", "l", 0, "Latency control while each dns query in ms, default 0ms")
+	RootCmd.PersistentFlags().IntVarP(&Opts.Latency, "latency", "l", 0, "Latency control while each dns query in ms, default 0ms")
 }
 
 var RootCmd = &cobra.Command{
@@ -86,18 +89,26 @@ var RootCmd = &cobra.Command{
 		// Set pkg global config
 		pkg.Zone = Opts.Zone
 
-		// debug print option data
-		opt, _ := json.MarshalIndent(Opts, "", "  ")
-		log.Tracef("Opts: %v", string(opt))
-
+		pkg.DnsTimeout = Opts.DnsTimeout
+		pkg.Latency = Opts.Latency
+		if Opts.Latency == 0 {
+			pkg.LockerMode = false
+		}
 		if Opts.DnsServer != "" {
 			pkg.NetResolver = pkg.WarpDnsServer(Opts.DnsServer)
+		} else {
+			pkg.NetResolver = pkg.DefaultResolver()
 		}
+
 		for _, rules := range Opts.FilterRules {
 			pkg.NetResolver.SetFilter(rules)
 		}
 		for _, rules := range Opts.FilterStrings {
 			pkg.NetResolver.SetContainsFilter(rules)
+		}
+
+		if !Opts.MultiThreadingMode {
+			Opts.ThreadingNum = 1
 		}
 		// Check if current environment is a kubernetes cluster
 		// If the command is whereisdns, which means DNS is not sure , so skip this check!
@@ -112,6 +123,10 @@ var RootCmd = &cobra.Command{
 		} else {
 			log.Tracef("kubernetes environment checking bypassed")
 		}
+
+		// debug print option data
+		opt, _ := json.MarshalIndent(Opts, "", "  ")
+		log.Tracef("Opts: %v", string(opt))
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		_ = cmd.Help()

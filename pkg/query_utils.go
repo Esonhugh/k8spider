@@ -6,6 +6,7 @@ import (
 	"net"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -13,28 +14,51 @@ import (
 
 var (
 	DnsTimeout  = 2
-	NetResolver = DefaultResolver()
+	NetResolver *SpiderResolver
 	Zone        string // Zone is the domain name of the cluster
 
-	Latency = 0
+	Latency    = 0
+	LockerMode = true // lockers if need locker to make sure only one dns record can make in same time
 )
 
 type SpiderResolver struct {
-	dns      string
-	ctx      context.Context
-	r        *net.Resolver
-	filter   []*regexp.Regexp
-	contains []string
+	dns        string
+	ctx        context.Context
+	r          *net.Resolver
+	filter     []*regexp.Regexp
+	contains   []string
+	timeout    int
+	lock       sync.Mutex
+	lockerMode bool
 }
 
 func DefaultResolver() *SpiderResolver {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(DnsTimeout)*time.Second) // I don't think if a inside cluster dns query has more than 2s latency.
 	return &SpiderResolver{
-		dns:      "default-dns",
-		r:        net.DefaultResolver,
-		ctx:      ctx,
-		filter:   []*regexp.Regexp{},
-		contains: []string{},
+		dns:        "default-dns",
+		timeout:    DnsTimeout,
+		r:          net.DefaultResolver,
+		filter:     []*regexp.Regexp{},
+		contains:   []string{},
+		lock:       sync.Mutex{},
+		lockerMode: LockerMode,
+	}
+}
+
+func WarpDnsServer(dnsServer string) *SpiderResolver {
+	return &SpiderResolver{
+		dns:     dnsServer,
+		timeout: DnsTimeout,
+		r: &net.Resolver{
+			PreferGo: true,
+			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+				d := net.Dialer{}
+				return d.DialContext(ctx, network, dnsServer)
+			},
+		},
+		filter:     []*regexp.Regexp{},
+		contains:   []string{},
+		lock:       sync.Mutex{},
+		lockerMode: LockerMode,
 	}
 }
 
@@ -81,29 +105,17 @@ func (r *SpiderResolver) filterStringArray(target []string) []string {
 	return filtered
 }
 
-func WarpDnsServer(dnsServer string) *SpiderResolver {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(DnsTimeout)*time.Second)
-	return &SpiderResolver{
-		dns: dnsServer,
-		r: &net.Resolver{
-			PreferGo: true,
-			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-				d := net.Dialer{}
-				return d.DialContext(ctx, network, dnsServer)
-			},
-		},
-		ctx:      ctx,
-		filter:   []*regexp.Regexp{},
-		contains: []string{},
-	}
-}
-
 func (s *SpiderResolver) CurrentDNS() string {
 	return s.dns
 }
 
 func (s *SpiderResolver) PTRRecord(ip net.IP) []string {
-	names, err := s.r.LookupAddr(s.ctx, ip.String())
+	if s.lockerMode {
+		s.lock.Lock()
+		defer s.lock.Unlock()
+	}
+	ctx, _ := context.WithTimeout(context.Background(), time.Duration(s.timeout)*time.Second)
+	names, err := s.r.LookupAddr(ctx, ip.String())
 	if err != nil {
 		log.Debugf("LookupAddr failed: %v", err)
 		return nil
@@ -113,7 +125,12 @@ func (s *SpiderResolver) PTRRecord(ip net.IP) []string {
 }
 
 func (s *SpiderResolver) SRVRecord(svcDomain string) (string, []*net.SRV, error) {
-	cname, srvs, err := s.r.LookupSRV(s.ctx, "", "", svcDomain)
+	if s.lockerMode {
+		s.lock.Lock()
+		defer s.lock.Unlock()
+	}
+	ctx, _ := context.WithTimeout(context.Background(), time.Duration(s.timeout)*time.Second)
+	cname, srvs, err := s.r.LookupSRV(ctx, "", "", svcDomain)
 	var finalsrv []*net.SRV
 	for _, srv := range srvs {
 		if s.filterString(srv.Target) {
@@ -126,19 +143,34 @@ func (s *SpiderResolver) SRVRecord(svcDomain string) (string, []*net.SRV, error)
 }
 
 func (s *SpiderResolver) CustomSRVRecord(svcDomain string, service, proto string) (string, []*net.SRV, error) {
-	cname, srvs, err := s.r.LookupSRV(s.ctx, service, proto, svcDomain)
+	if s.lockerMode {
+		s.lock.Lock()
+		defer s.lock.Unlock()
+	}
+	ctx, _ := context.WithTimeout(context.Background(), time.Duration(s.timeout)*time.Second)
+	cname, srvs, err := s.r.LookupSRV(ctx, service, proto, svcDomain)
 	time.Sleep(time.Duration(Latency) * time.Millisecond)
 	return cname, srvs, err
 }
 
 func (s *SpiderResolver) ARecord(domain string) ([]net.IP, error) {
+	if s.lockerMode {
+		s.lock.Lock()
+		defer s.lock.Unlock()
+	}
 	time.Sleep(time.Duration(Latency) * time.Millisecond)
-	return s.r.LookupIP(s.ctx, "ip", domain)
+	ctx, _ := context.WithTimeout(context.Background(), time.Duration(s.timeout)*time.Second)
+	return s.r.LookupIP(ctx, "ip", domain)
 }
 
 func (s *SpiderResolver) TXTRecord(domain string) ([]string, error) {
+	if s.lockerMode {
+		s.lock.Lock()
+		defer s.lock.Unlock()
+	}
 	time.Sleep(time.Duration(Latency) * time.Millisecond)
-	return s.r.LookupTXT(s.ctx, domain)
+	ctx, _ := context.WithTimeout(context.Background(), time.Duration(s.timeout)*time.Second)
+	return s.r.LookupTXT(ctx, domain)
 }
 
 func PTRRecord(ip net.IP) []string {

@@ -1,4 +1,4 @@
-package service
+package dnssd
 
 import (
 	"fmt"
@@ -49,28 +49,15 @@ var SubNetCmd = &cobra.Command{
 			return
 		}
 		var finalRecord define.Records
-		if command.Opts.MultiThreadingMode {
-			finalRecord = RunMultiThread(ipNets, command.Opts.ThreadingNum)
-		} else {
-			finalRecord = Run(ipNets)
-		}
+		finalRecord = RunMultiThread(ipNets, command.Opts.ThreadingNum)
 		printer.PrintResult(finalRecord, command.Opts.OutputFile)
 	},
-}
-
-func Run(net *net.IPNet) (records define.Records) {
-	records = scanner.ScanSubnet(net)
-	if records == nil || len(records) == 0 {
-		log.Warnf("ScanSubnet Found Nothing")
-		return
-	}
-	return
 }
 
 func RunMultiThread(net *net.IPNet, num int) (finalRecord define.Records) {
 	scan := mutli.NewSubnetScanner(num)
 	for r := range scan.ScanSubnet(net) {
-		finalRecord = append(finalRecord, r...)
+		finalRecord = append(finalRecord, r)
 	}
 	if len(finalRecord) == 0 {
 		log.Warn("ScanSubnet Found Nothing")

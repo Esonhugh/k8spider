@@ -57,7 +57,7 @@ var SubNetCmd = &cobra.Command{
 func RunMultiThread(net *net.IPNet, num int) (finalRecord define.Records) {
 	scan := mutli.NewSubnetScanner(num)
 	for r := range scan.ScanSubnet(net) {
-		finalRecord = append(finalRecord, r...)
+		finalRecord = append(finalRecord, r)
 	}
 	if len(finalRecord) == 0 {
 		log.Warn("ScanSubnet Found Nothing")

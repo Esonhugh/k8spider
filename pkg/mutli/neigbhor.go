@@ -112,12 +112,14 @@ func (s *NeighborScanner) ScanSvcNeighbor(subnet *net.IPNet) <-chan define.Recor
 			}
 		}
 		s.wg.Wait()
+		log.Tracef("all %v subnets done", subnet.String())
 		close(out)
 	}()
 	return out
 }
 
 func (s *NeighborScanner) scanSvc(subnet *net.IPNet, to chan define.Record) {
+	log.Tracef("scan %v thread begin", subnet.String())
 	for _, ip := range pkg.ParseIPNetToIPs(subnet) {
 		hostList := pkg.PTRRecord(ip)
 		for _, host := range hostList {
@@ -133,4 +135,5 @@ func (s *NeighborScanner) scanSvc(subnet *net.IPNet, to chan define.Record) {
 			}
 		}
 	}
+	log.Tracef("scan %v thread done", subnet.String())
 }

@@ -47,12 +47,14 @@ func (s *SubnetScanner) ScanSubnet(subnet *net.IPNet) <-chan define.Record {
 			}
 		}
 		s.wg.Wait()
+		log.Tracef("all %v subnets done", subnet.String())
 		close(out)
 	}()
 	return out
 }
 
 func (s *SubnetScanner) scan(subnet *net.IPNet, to chan define.Record) {
+	log.Tracef("scan %v thread begin", subnet.String())
 	for _, ip := range pkg.ParseIPNetToIPs(subnet) {
 		ptr := pkg.PTRRecord(ip)
 		if len(ptr) > 0 {
@@ -63,5 +65,6 @@ func (s *SubnetScanner) scan(subnet *net.IPNet, to chan define.Record) {
 			}
 		}
 	}
+	log.Tracef("scan %v thread done", subnet.String())
 	return
 }

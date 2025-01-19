@@ -3,6 +3,7 @@ package all
 import (
 	"net"
 	"strings"
+	"sync"
 
 	command "github.com/esonhugh/k8spider/cmd"
 	"github.com/esonhugh/k8spider/define"
@@ -64,13 +65,29 @@ var AllCmd = &cobra.Command{
 	},
 }
 
+func mergeRecords(cs ...<-chan define.Record) chan define.Record {
+	out := make(chan define.Record)
+	var wg sync.WaitGroup
+	wg.Add(len(cs))
+	for _, c := range cs {
+		go func(c <-chan define.Record) {
+			for v := range c {
+				out <- v
+			}
+			wg.Done()
+		}(c)
+	}
+	go func() {
+		wg.Wait()
+		close(out)
+	}()
+	return out
+}
+
 func RunMultiThread(net, pod *net.IPNet, count int) (finalRecord define.Records) {
 	scan := mutli.ScanAll(net, count)
 	scan2 := mutli.ScanNeighborSvc(pod, count)
-	select {
-	case r := <-scan:
-		finalRecord = append(finalRecord, r)
-	case r := <-scan2:
+	for r := range mergeRecords(scan, scan2) {
 		finalRecord = append(finalRecord, r)
 	}
 	return

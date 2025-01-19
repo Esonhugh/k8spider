@@ -27,7 +27,7 @@ type SpiderResolver struct {
 	filter   []*regexp.Regexp
 	contains []string
 
-	lock *sync.Mutex
+	lock sync.Mutex
 }
 
 func DefaultResolver() *SpiderResolver {
@@ -38,6 +38,25 @@ func DefaultResolver() *SpiderResolver {
 		ctx:      ctx,
 		filter:   []*regexp.Regexp{},
 		contains: []string{},
+		lock:     sync.Mutex{},
+	}
+}
+
+func WarpDnsServer(dnsServer string) *SpiderResolver {
+	ctx, _ := context.WithTimeout(context.Background(), time.Duration(DnsTimeout)*time.Second)
+	return &SpiderResolver{
+		dns: dnsServer,
+		r: &net.Resolver{
+			PreferGo: true,
+			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+				d := net.Dialer{}
+				return d.DialContext(ctx, network, dnsServer)
+			},
+		},
+		ctx:      ctx,
+		filter:   []*regexp.Regexp{},
+		contains: []string{},
+		lock:     sync.Mutex{},
 	}
 }
 
@@ -82,23 +101,6 @@ func (r *SpiderResolver) filterStringArray(target []string) []string {
 	}
 	log.Tracef("filtering %s \nresult: %s", strings.Join(target, " "), strings.Join(filtered, " "))
 	return filtered
-}
-
-func WarpDnsServer(dnsServer string) *SpiderResolver {
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(DnsTimeout)*time.Second)
-	return &SpiderResolver{
-		dns: dnsServer,
-		r: &net.Resolver{
-			PreferGo: true,
-			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-				d := net.Dialer{}
-				return d.DialContext(ctx, network, dnsServer)
-			},
-		},
-		ctx:      ctx,
-		filter:   []*regexp.Regexp{},
-		contains: []string{},
-	}
 }
 
 func (s *SpiderResolver) CurrentDNS() string {

@@ -17,8 +17,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var Opts struct {
+	OnlyService bool
+}
+
 func init() {
 	command.RootCmd.AddCommand(AllCmd)
+	AllCmd.PersistentFlags().BoolVarP(&Opts.OnlyService, "only-service", "O", false, "only dump service cidr")
 }
 
 var AllCmd = &cobra.Command{
@@ -58,7 +63,11 @@ var AllCmd = &cobra.Command{
 		}
 
 		var finalRecord define.Records
-		finalRecord = RunMultiThread(ipNets, podNets, command.Opts.ThreadingNum)
+		if Opts.OnlyService {
+			finalRecord = OnlyService(ipNets, command.Opts.ThreadingNum)
+		} else {
+			finalRecord = RunMultiThread(ipNets, podNets, command.Opts.ThreadingNum)
+		}
 		printer.PrintResult(finalRecord, command.Opts.OutputFile)
 
 		PostRun(finalRecord)
@@ -88,6 +97,14 @@ func RunMultiThread(net, pod *net.IPNet, count int) (finalRecord define.Records)
 	scan := mutli.ScanAll(net, count)
 	scan2 := mutli.ScanNeighborSvc(pod, count)
 	for r := range mergeRecords(scan, scan2) {
+		finalRecord = append(finalRecord, r)
+	}
+	return
+}
+
+func OnlyService(net *net.IPNet, count int) (finalRecord define.Records) {
+	scan := mutli.ScanAll(net, count)
+	for r := range scan {
 		finalRecord = append(finalRecord, r)
 	}
 	return

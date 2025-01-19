@@ -114,7 +114,8 @@ func (s *SpiderResolver) PTRRecord(ip net.IP) []string {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(s.timeout)*time.Second)
+	ctx, cn := context.WithTimeout(context.Background(), time.Duration(s.timeout)*time.Second)
+	defer cn()
 	names, err := s.r.LookupAddr(ctx, ip.String())
 	if err != nil {
 		log.Debugf("LookupAddr failed: %v", err)
@@ -129,7 +130,8 @@ func (s *SpiderResolver) SRVRecord(svcDomain string) (string, []*net.SRV, error)
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(s.timeout)*time.Second)
+	ctx, cn := context.WithTimeout(context.Background(), time.Duration(s.timeout)*time.Second)
+	defer cn()
 	cname, srvs, err := s.r.LookupSRV(ctx, "", "", svcDomain)
 	var finalsrv []*net.SRV
 	for _, srv := range srvs {
@@ -147,7 +149,8 @@ func (s *SpiderResolver) CustomSRVRecord(svcDomain string, service, proto string
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(s.timeout)*time.Second)
+	ctx, cn := context.WithTimeout(context.Background(), time.Duration(s.timeout)*time.Second)
+	defer cn()
 	cname, srvs, err := s.r.LookupSRV(ctx, service, proto, svcDomain)
 	time.Sleep(time.Duration(Latency) * time.Millisecond)
 	return cname, srvs, err
@@ -159,7 +162,8 @@ func (s *SpiderResolver) ARecord(domain string) ([]net.IP, error) {
 		defer s.lock.Unlock()
 	}
 	time.Sleep(time.Duration(Latency) * time.Millisecond)
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(s.timeout)*time.Second)
+	ctx, cn := context.WithTimeout(context.Background(), time.Duration(s.timeout)*time.Second)
+	defer cn()
 	return s.r.LookupIP(ctx, "ip", domain)
 }
 
@@ -169,7 +173,8 @@ func (s *SpiderResolver) TXTRecord(domain string) ([]string, error) {
 		defer s.lock.Unlock()
 	}
 	time.Sleep(time.Duration(Latency) * time.Millisecond)
-	ctx, _ := context.WithTimeout(context.Background(), time.Duration(s.timeout)*time.Second)
+	ctx, cn := context.WithTimeout(context.Background(), time.Duration(s.timeout)*time.Second)
+	defer cn()
 	return s.r.LookupTXT(ctx, domain)
 }
 

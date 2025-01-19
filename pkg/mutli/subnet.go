@@ -1,12 +1,12 @@
 package mutli
 
 import (
-	"github.com/esonhugh/k8spider/define"
-	"github.com/esonhugh/k8spider/pkg"
-	"github.com/esonhugh/k8spider/pkg/scanner"
-	log "github.com/sirupsen/logrus"
 	"net"
 	"sync"
+
+	"github.com/esonhugh/k8spider/define"
+	"github.com/esonhugh/k8spider/pkg"
+	log "github.com/sirupsen/logrus"
 )
 
 type SubnetScanner struct {
@@ -21,12 +21,12 @@ func NewSubnetScanner(threading int) *SubnetScanner {
 	}
 }
 
-func (s *SubnetScanner) ScanSubnet(subnet *net.IPNet) <-chan []define.Record {
+func (s *SubnetScanner) ScanSubnet(subnet *net.IPNet) <-chan define.Record {
 	if subnet == nil {
 		log.Debugf("subnet is nil")
 		return nil
 	}
-	out := make(chan []define.Record, 100)
+	out := make(chan define.Record, 100)
 	go func() {
 		// if subnets, err := pkg.SubnetShift(subnet, 4); err != nil {
 		if subnets, err := pkg.SubnetInto(subnet, s.count); err != nil {
@@ -52,9 +52,16 @@ func (s *SubnetScanner) ScanSubnet(subnet *net.IPNet) <-chan []define.Record {
 	return out
 }
 
-func (s *SubnetScanner) scan(subnet *net.IPNet, to chan []define.Record) {
-	// to <- scanner.ScanSubnet(subnet)
+func (s *SubnetScanner) scan(subnet *net.IPNet, to chan define.Record) {
 	for _, ip := range pkg.ParseIPNetToIPs(subnet) {
-		to <- scanner.ScanSingleIP(ip)
+		ptr := pkg.PTRRecord(ip)
+		if len(ptr) > 0 {
+			for _, domain := range ptr {
+				log.Infof("PTRrecord %v --> %v", subnet, domain)
+				r := define.Record{Ip: ip, SvcDomain: domain}
+				to <- r
+			}
+		}
 	}
+	return
 }

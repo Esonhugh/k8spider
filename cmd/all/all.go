@@ -69,9 +69,9 @@ func RunMultiThread(net, pod *net.IPNet, count int) (finalRecord define.Records)
 	scan2 := mutli.ScanNeighborSvc(pod, count)
 	select {
 	case r := <-scan:
-		finalRecord = append(finalRecord, r...)
+		finalRecord = append(finalRecord, r)
 	case r := <-scan2:
-		finalRecord = append(finalRecord, r...)
+		finalRecord = append(finalRecord, r)
 	}
 	return
 }

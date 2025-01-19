@@ -86,12 +86,12 @@ func (s *NeighborScanner) scan(ns string, subnet *net.IPNet, to chan []define.Re
 	}
 }
 
-func (s *NeighborScanner) ScanSvcNeighbor(subnet *net.IPNet) <-chan []define.Record {
+func (s *NeighborScanner) ScanSvcNeighbor(subnet *net.IPNet) <-chan define.Record {
 	if subnet == nil {
 		log.Debugf("subnet is nil")
 		return nil
 	}
-	out := make(chan []define.Record, 100)
+	out := make(chan define.Record, 100)
 	go func() {
 		// if subnets, err := pkg.SubnetShift(subnet, 4); err != nil {
 		if subnets, err := pkg.SubnetInto(subnet, s.count); err != nil {
@@ -117,17 +117,18 @@ func (s *NeighborScanner) ScanSvcNeighbor(subnet *net.IPNet) <-chan []define.Rec
 	return out
 }
 
-func (s *NeighborScanner) scanSvc(subnet *net.IPNet, to chan []define.Record) {
+func (s *NeighborScanner) scanSvc(subnet *net.IPNet, to chan define.Record) {
 	for _, ip := range pkg.ParseIPNetToIPs(subnet) {
 		hostList := pkg.PTRRecord(ip)
 		for _, host := range hostList {
 			if post.IsPodServiceFormat(host) {
 				newRecord := define.Record{
 					Ip:        ip,
-					SvcDomain: post.GetPodServiceRawService(host),
+					SvcDomain: host,
 				}
-				to <- []define.Record{newRecord}
+				to <- newRecord
 			} else {
+				log.Tracef("Pod Service: %v(%v) is not a pod service", host, ip.String())
 				continue
 			}
 		}

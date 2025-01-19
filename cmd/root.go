@@ -91,6 +91,9 @@ var RootCmd = &cobra.Command{
 
 		pkg.DnsTimeout = Opts.DnsTimeout
 		pkg.Latency = Opts.Latency
+		if Opts.Latency == 0 {
+			pkg.LockerMode = false
+		}
 		if Opts.DnsServer != "" {
 			pkg.NetResolver = pkg.WarpDnsServer(Opts.DnsServer)
 		} else {

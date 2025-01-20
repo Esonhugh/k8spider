@@ -123,7 +123,7 @@ func (s *NeighborScanner) scanSvc(subnet *net.IPNet, to chan define.Record) {
 	for _, ip := range pkg.ParseIPNetToIPs(subnet) {
 		hostList := pkg.PTRRecord(ip)
 		for _, host := range hostList {
-			if post.IsPodServiceFormat(host) {
+			if post.IsPodServiceFormat(host, pkg.Zone) {
 				newRecord := define.Record{
 					Ip:        ip,
 					SvcDomain: host,

@@ -1,22 +1,32 @@
 package post
 
 import (
+	"net"
 	"strings"
 
 	"github.com/esonhugh/k8spider/define"
 	"github.com/miekg/dns"
+	log "github.com/sirupsen/logrus"
 )
 
 func RecordsDumpFullService(r []define.Record, zone string) []string {
 	var result []string
 	for _, record := range r {
-		if record.SvcDomain != "" && IsServiceFormat(record.SvcDomain, zone) {
+		// ops svc domain
+		if record.SvcDomain != "" && IsPodServiceFormat(record.SvcDomain, zone) {
+			result = append(result, GetPodServiceRawService(record.SvcDomain, zone))
+		} else if record.SvcDomain != "" && IsServiceFormat(record.SvcDomain, zone) {
 			result = append(result, record.SvcDomain)
 		}
+		// ops srv records
 		for _, srv := range record.SrvRecords {
 			for _, s := range srv.Srv {
-				if IsServiceFormat(s.Target, zone) {
-					result = append(result, s.Target)
+				if IsPodServiceFormat(s.Target, zone) {
+					result = append(result, GetPodServiceRawService(s.Target, zone))
+				} else if IsServiceFormat(s.Target, zone) {
+					result = append(result, dns.Fqdn(s.Target))
+				} else {
+					log.Debugf("Unhandled service type: %v", s.Target)
 				}
 			}
 		}
@@ -64,10 +74,13 @@ func GetNamespaceFromDomain(domain string, zone string) string {
 	return ""
 }
 
-func IsPodServiceFormat(domain string) bool {
-	str := strings.Split(dns.Fqdn(domain), ".")
-	if len(str) > 5 {
-		// 0:IP 1:ServiceName 2:Namespace 3:svc 4:cluster 5:local 6:
+func IsPodServiceFormat(domain, zone string) bool {
+	if domain == "" {
+		return false
+	}
+	str := strings.Split(strings.ReplaceAll(dns.Fqdn(domain), dns.Fqdn(zone), ""), ".")
+	if len(str) > 3 {
+		// 0:IP 1:ServiceName 2:Namespace 3:svc
 		if str[3] == "svc" {
 			return true
 		}
@@ -75,18 +88,47 @@ func IsPodServiceFormat(domain string) bool {
 	return false
 }
 
-func GetPodServiceRawService(domain string) string {
-	str := strings.Split(dns.Fqdn(domain), ".")
-	return strings.Join(str[1:], ".")
+func GetPodServiceRawService(domain, zone string) string {
+	str := strings.Split(strings.ReplaceAll(dns.Fqdn(domain), dns.Fqdn(zone), ""), ".")
+	return dns.Fqdn(strings.Join(str[1:], ".") + zone)
 }
 
-func PodServiceMap(BaseService define.Records) map[string][]string {
+func GetPodServiceRawIP(domain, zone string) net.IP {
+	str := strings.Split(strings.ReplaceAll(dns.Fqdn(domain), dns.Fqdn(zone), ""), ".")
+	return net.ParseIP(strings.ReplaceAll(str[0], "-", "."))
+}
+
+func PodServiceMap(BaseService define.Records, zone string) map[string][]string {
 	result := make(map[string][]string)
 	for _, r := range BaseService {
-		if r.SvcDomain != "" {
-			svcDomain := GetPodServiceRawService(r.SvcDomain)
-			result[svcDomain] = append(result[svcDomain], r.Ip.String())
+		if r.SvcDomain != "" && IsPodServiceFormat(r.SvcDomain, zone) {
+			svcDomain := GetPodServiceRawService(r.SvcDomain, zone)
+			result[svcDomain] = append(result[svcDomain], GetPodServiceRawIP(r.SvcDomain, zone).String())
+		} else if r.SvcDomain != "" && IsServiceFormat(r.SvcDomain, zone) {
+			if r.Ip != nil {
+				result[dns.Fqdn(r.SvcDomain)] = append(result[dns.Fqdn(r.SvcDomain)], r.Ip.String())
+			} else {
+				log.Debugf("Lost service ip addr %v", r.SvcDomain)
+			}
 		}
+
+		for _, srv := range r.SrvRecords {
+			for _, s := range srv.Srv {
+				if IsPodServiceFormat(s.Target, zone) {
+					domain := GetPodServiceRawService(s.Target, zone)
+					result[domain] = append(result[domain], GetPodServiceRawIP(s.Target, zone).String())
+				} else if IsServiceFormat(s.Target, zone) {
+					// result[dns.Fqdn(s.Target)]
+					log.Debugf("can't put ip address in service %v in record %v", dns.Fqdn(s.Target), r)
+				} else {
+					log.Debugf("Unhandled service type: %v", s.Target)
+				}
+			}
+		}
+
+	}
+	for k, v := range result {
+		result[k] = UniqueSlice(v)
 	}
 	return result
 }

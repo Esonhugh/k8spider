@@ -130,25 +130,41 @@ func PostRun(finalRecord define.Records, file string) {
 		}
 	}
 	writeString("// Extracted information under \n")
-	log.Info("Extract Namespaces: ")
-	writeString("// Extract Namespaces:")
-	list := post.RecordsDumpNameSpace(finalRecord, command.Opts.Zone)
-	for _, ns := range list {
-		log.Infof("Namespace: %s", ns)
+
+	{ // Namespaces
+		log.Info("Extract Namespaces: ")
+		writeString("// Extract Namespaces:\n")
+		list := post.RecordsDumpNameSpace(finalRecord, command.Opts.Zone)
+		for _, ns := range list {
+			log.Infof("Namespace: %s", ns)
+		}
+		writeString("// Namespace: [" + strings.Join(list, ",") + "]\n")
 	}
-	writeString("// Namespace: [" + strings.Join(list, ",") + "]\n")
-	log.Info("Extract Service: ")
-	writeString("// Extract Service: ")
-	list = post.RecordsDumpFullService(finalRecord, command.Opts.Zone)
-	for _, svc := range list {
-		log.Infof("Service: %s", svc)
-		writeString("// \t\t" + svc + "\n")
+
+	{ // service
+		log.Info("Extract Service: ")
+		writeString("// Extract Service: \n")
+		list := post.RecordsDumpFullService(finalRecord, command.Opts.Zone)
+		for _, svc := range list {
+			if strings.Contains(svc, "metrics") {
+				if strings.Contains(svc, "kube-state-metrics") {
+					log.Warnf("Checkout service %v, which maybe contains cluster metrics information", svc)
+				} else {
+					log.Warnf("Checkout service %v, which maybe contains apps metrics information", svc)
+				}
+			}
+			log.Infof("Service: %s", svc)
+			writeString("// \t\t" + svc + "\n")
+		}
 	}
-	log.Info("Possible Pod and service ip maps")
-	writeString("// Service maps: ")
-	maps := post.PodServiceMap(finalRecord, command.Opts.Zone)
-	for svc, ips := range maps {
-		log.Infof("Service: %s\n\tips: [%s]", svc, strings.Join(ips, ","))
-		writeString("// Service: " + svc + "\n//\tips: " + strings.Join(ips, "\n//\t\t") + "\n")
+
+	{ // service maps with pods and service ips
+		log.Info("Possible Pod and service ip maps")
+		writeString("// Service maps: \n")
+		maps := post.PodServiceMap(finalRecord, command.Opts.Zone)
+		for svc, ips := range maps {
+			log.Infof("Service: %s\n\tips: [%s]", svc, strings.Join(ips, ","))
+			writeString("// Service: " + svc + "\n//\tips:\t" + strings.Join(ips, "\n//\t\t") + "\n")
+		}
 	}
 }

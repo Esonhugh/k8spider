@@ -101,6 +101,7 @@ func GetPodServiceRawIP(domain, zone string) net.IP {
 func PodServiceMap(BaseService define.Records, zone string) map[string][]string {
 	result := make(map[string][]string)
 	for _, r := range BaseService {
+		log.Tracef("Processing Record: %v", r)
 		if r.SvcDomain != "" && IsPodServiceFormat(r.SvcDomain, zone) {
 			svcDomain := GetPodServiceRawService(r.SvcDomain, zone)
 			result[svcDomain] = append(result[svcDomain], GetPodServiceRawIP(r.SvcDomain, zone).String())
@@ -110,6 +111,8 @@ func PodServiceMap(BaseService define.Records, zone string) map[string][]string 
 			} else {
 				log.Debugf("Lost service ip addr %v", r.SvcDomain)
 			}
+		} else {
+			log.Debugf("Unhandled service type: %v", r.SvcDomain)
 		}
 
 		for _, srv := range r.SrvRecords {
@@ -125,7 +128,6 @@ func PodServiceMap(BaseService define.Records, zone string) map[string][]string 
 				}
 			}
 		}
-
 	}
 	for k, v := range result {
 		result[k] = UniqueSlice(v)

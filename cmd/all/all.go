@@ -2,6 +2,7 @@ package all
 
 import (
 	"net"
+	"os"
 	"strings"
 	"sync"
 
@@ -70,7 +71,7 @@ var AllCmd = &cobra.Command{
 		}
 		printer.PrintResult(finalRecord, command.Opts.OutputFile)
 
-		PostRun(finalRecord)
+		PostRun(finalRecord, command.Opts.OutputFile)
 	},
 }
 
@@ -110,23 +111,41 @@ func OnlyService(net *net.IPNet, count int) (finalRecord define.Records) {
 	return
 }
 
-func PostRun(finalRecord define.Records) {
+func PostRun(finalRecord define.Records, file string) {
 	if finalRecord == nil || len(finalRecord) == 0 {
 		return
 	}
+	var f *os.File = nil
+	if file != "" {
+		var err error
+		f, err = os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		if err != nil {
+			log.Warnf("OpenFile failed: %v", err)
+		}
+		defer f.Close()
+	}
+	writeString := func(s string) {
+		if f != nil {
+			_, _ = f.WriteString(s)
+		}
+	}
+	writeString("// Extracted information under \n")
 	log.Info("Extract Namespaces: ")
 	list := post.RecordsDumpNameSpace(finalRecord, command.Opts.Zone)
 	for _, ns := range list {
 		log.Infof("Namespace: %s", ns)
+		writeString("Namespace: " + ns + "\n")
 	}
 	log.Info("Extract Service: ")
 	list = post.RecordsDumpFullService(finalRecord, command.Opts.Zone)
 	for _, svc := range list {
 		log.Infof("Service: %s", svc)
+		writeString("Service: " + svc + "\n")
 	}
 	log.Info("Possible Pod and service ip maps")
 	maps := post.PodServiceMap(finalRecord, command.Opts.Zone)
 	for svc, ips := range maps {
 		log.Infof("Service: %s\n\tips: [%s]", svc, strings.Join(ips, ","))
+		writeString("Service: " + svc + "\n\tips: [" + strings.Join(ips, ",") + "]\n")
 	}
 }

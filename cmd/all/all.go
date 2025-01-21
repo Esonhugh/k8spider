@@ -2,6 +2,7 @@ package all
 
 import (
 	"net"
+	"os"
 	"strings"
 	"sync"
 
@@ -17,8 +18,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var Opts struct {
+	OnlyService bool
+}
+
 func init() {
 	command.RootCmd.AddCommand(AllCmd)
+	AllCmd.PersistentFlags().BoolVarP(&Opts.OnlyService, "only-service", "O", false, "only dump service cidr")
 }
 
 var AllCmd = &cobra.Command{
@@ -58,10 +64,14 @@ var AllCmd = &cobra.Command{
 		}
 
 		var finalRecord define.Records
-		finalRecord = RunMultiThread(ipNets, podNets, command.Opts.ThreadingNum)
+		if Opts.OnlyService {
+			finalRecord = OnlyService(ipNets, command.Opts.ThreadingNum)
+		} else {
+			finalRecord = RunMultiThread(ipNets, podNets, command.Opts.ThreadingNum)
+		}
 		printer.PrintResult(finalRecord, command.Opts.OutputFile)
 
-		PostRun(finalRecord)
+		PostRun(finalRecord, command.Opts.OutputFile)
 	},
 }
 
@@ -93,23 +103,68 @@ func RunMultiThread(net, pod *net.IPNet, count int) (finalRecord define.Records)
 	return
 }
 
-func PostRun(finalRecord define.Records) {
+func OnlyService(net *net.IPNet, count int) (finalRecord define.Records) {
+	scan := mutli.ScanAll(net, count)
+	for r := range scan {
+		finalRecord = append(finalRecord, r)
+	}
+	return
+}
+
+func PostRun(finalRecord define.Records, file string) {
 	if finalRecord == nil || len(finalRecord) == 0 {
 		return
 	}
-	log.Info("Extract Namespaces: ")
-	list := post.RecordsDumpNameSpace(finalRecord, command.Opts.Zone)
-	for _, ns := range list {
-		log.Infof("Namespace: %s", ns)
+	var f *os.File = nil
+	if file != "" {
+		var err error
+		f, err = os.OpenFile(file, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		if err != nil {
+			log.Warnf("OpenFile failed: %v", err)
+		}
+		defer f.Close()
 	}
-	log.Info("Extract Service: ")
-	list = post.RecordsDumpFullService(finalRecord, command.Opts.Zone)
-	for _, svc := range list {
-		log.Infof("Service: %s", svc)
+	writeString := func(s string) {
+		if f != nil {
+			_, _ = f.WriteString(s)
+		}
 	}
-	log.Info("Possible Pod and service ip maps")
-	maps := post.PodServiceMap(finalRecord)
-	for svc, ips := range maps {
-		log.Infof("service %s has ips %s", svc, strings.Join(ips, ","))
+	writeString("// Extracted information under \n")
+
+	{ // Namespaces
+		log.Info("Extract Namespaces: ")
+		writeString("// Extract Namespaces:\n")
+		list := post.RecordsDumpNameSpace(finalRecord, command.Opts.Zone)
+		for _, ns := range list {
+			log.Infof("Namespace: %s", ns)
+		}
+		writeString("// Namespace: [" + strings.Join(list, ",") + "]\n")
+	}
+
+	{ // service
+		log.Info("Extract Service: ")
+		writeString("// Extract Service: \n")
+		list := post.RecordsDumpFullService(finalRecord, command.Opts.Zone)
+		for _, svc := range list {
+			if strings.Contains(svc, "metrics") {
+				if strings.Contains(svc, "kube-state-metrics") {
+					log.Warnf("Checkout service %v, which maybe contains cluster metrics information", svc)
+				} else {
+					log.Warnf("Checkout service %v, which maybe contains apps metrics information", svc)
+				}
+			}
+			log.Infof("Service: %s", svc)
+			writeString("// \t\t" + svc + "\n")
+		}
+	}
+
+	{ // service maps with pods and service ips
+		log.Info("Possible Pod and service ip maps")
+		writeString("// Service maps: \n")
+		maps := post.PodServiceMap(finalRecord, command.Opts.Zone)
+		for svc, ips := range maps {
+			log.Infof("Service: %s\n\tips: [%s]", svc, strings.Join(ips, ","))
+			writeString("// Service: " + svc + "\n//\tips:\t" + strings.Join(ips, "\n//\t\t") + "\n")
+		}
 	}
 }

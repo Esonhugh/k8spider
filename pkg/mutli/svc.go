@@ -13,7 +13,7 @@ func ScanServiceWithChan(rev <-chan define.Record) <-chan define.Record {
 		for records := range rev {
 			out <- scanner.ScanSingleSvcForPorts(records)
 		}
-		// close(out)
+		close(out)
 		log.Tracef("piped scanning service port ends")
 	}()
 	return out

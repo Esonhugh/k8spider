@@ -53,7 +53,7 @@ func CheckKubeDNS(dns ...*SpiderResolver) bool {
 func CheckKubeDNS_DefaultAPIServer(dns *SpiderResolver) bool {
 	info, err := dns.ARecord("kubernetes.default.svc." + Zone)
 	if err == nil {
-		log.Infof("kubernetes.default.svc.%v found in dns(%v)! response: %v", Zone, dns.CurrentDNS(), info)
+		log.Debugf("kubernetes.default.svc.%v found in dns(%v)! response: %v", Zone, dns.CurrentDNS(), info)
 		return true
 	}
 	log.Tracef("kubernetes.default.svc.%v not found in dns(%v)", Zone, dns.CurrentDNS())
@@ -69,7 +69,7 @@ func CheckKubeDNS_DefaultAPIServer(dns *SpiderResolver) bool {
 func CheckKubeDNS_DNSVersion(dns *SpiderResolver) bool {
 	info, err := dns.TXTRecord("dns-version." + Zone)
 	if err == nil {
-		log.Infof("dns-version.%v found in dns(%v)! response: %v", Zone, dns.CurrentDNS(), info)
+		log.Debugf("dns-version.%v found in dns(%v)! response: %v", Zone, dns.CurrentDNS(), info)
 		return true
 	}
 	log.Tracef("dns-version.%v not found in dns(%v)", Zone, dns.CurrentDNS())
@@ -85,7 +85,7 @@ func CheckKubeDNS_DNSVersion(dns *SpiderResolver) bool {
 func CheckKubeDNS_NS_DNS_DOMAIN(dns *SpiderResolver) bool {
 	info, err := dns.ARecord("ns.dns." + Zone)
 	if err == nil {
-		log.Infof("ns.dns.%v found in dns(%v)! response: %v", Zone, dns.CurrentDNS(), info)
+		log.Debugf("ns.dns.%v found in dns(%v)! response: %v", Zone, dns.CurrentDNS(), info)
 		return true
 	}
 	log.Tracef("ns.dns.%v not found in dns(%v)", Zone, dns.CurrentDNS())

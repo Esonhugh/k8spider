@@ -34,8 +34,9 @@ func TestRecordsDump2(t *testing.T) {
 	r3 := []define.Record{}
 	json.Unmarshal([]byte(AxfrSample), &r3)
 	rs := []define.Record{*r1, *r2}
-	t.Log(RecordsDumpNameSpace(rs, "cluster.local"))
-	t.Log(RecordsDumpNameSpace(r3, "zonetransfer.me."))
+	// t.Log(RecordsDumpNameSpace(rs, "cluster.local"))
+	// t.Log(RecordsDumpNameSpace(r3, "zonetransfer.me."))
 	t.Log(RecordsDumpFullService(rs, "cluster.local"))
-	t.Log(RecordsDumpFullService(r3, "zonetransfer.me."))
+	// t.Log(RecordsDumpFullService(r3, "zonetransfer.me."))
+	t.Log(PodServiceMap(rs, "cluster.local"))
 }

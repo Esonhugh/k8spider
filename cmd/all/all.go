@@ -127,6 +127,6 @@ func PostRun(finalRecord define.Records) {
 	log.Info("Possible Pod and service ip maps")
 	maps := post.PodServiceMap(finalRecord, command.Opts.Zone)
 	for svc, ips := range maps {
-		log.Infof("service %s has ips %s", svc, strings.Join(ips, ","))
+		log.Infof("service %s has ips [%s]", svc, strings.Join(ips, ","))
 	}
 }

@@ -118,7 +118,7 @@ func (s *SpiderResolver) PTRRecord(ip net.IP) []string {
 	defer cn()
 	names, err := s.r.LookupAddr(ctx, ip.String())
 	if err != nil {
-		log.Debugf("LookupAddr failed: %v", err)
+		log.Tracef("LookupAddr failed: %v", err)
 		return nil
 	}
 	time.Sleep(time.Duration(Latency) * time.Millisecond)

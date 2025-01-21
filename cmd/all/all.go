@@ -131,21 +131,24 @@ func PostRun(finalRecord define.Records, file string) {
 	}
 	writeString("// Extracted information under \n")
 	log.Info("Extract Namespaces: ")
+	writeString("// Extract Namespaces:")
 	list := post.RecordsDumpNameSpace(finalRecord, command.Opts.Zone)
 	for _, ns := range list {
 		log.Infof("Namespace: %s", ns)
-		writeString("Namespace: " + ns + "\n")
 	}
+	writeString("// Namespace: [" + strings.Join(list, ",") + "]\n")
 	log.Info("Extract Service: ")
+	writeString("// Extract Service: ")
 	list = post.RecordsDumpFullService(finalRecord, command.Opts.Zone)
 	for _, svc := range list {
 		log.Infof("Service: %s", svc)
-		writeString("Service: " + svc + "\n")
+		writeString("// \t\t" + svc + "\n")
 	}
 	log.Info("Possible Pod and service ip maps")
+	writeString("// Service maps: ")
 	maps := post.PodServiceMap(finalRecord, command.Opts.Zone)
 	for svc, ips := range maps {
 		log.Infof("Service: %s\n\tips: [%s]", svc, strings.Join(ips, ","))
-		writeString("Service: " + svc + "\n\tips: [" + strings.Join(ips, ",") + "]\n")
+		writeString("// Service: " + svc + "\n//\tips: " + strings.Join(ips, "\n//\t\t") + "\n")
 	}
 }

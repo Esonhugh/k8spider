@@ -122,7 +122,12 @@ func PodServiceMap(BaseService define.Records, zone string) map[string][]string 
 					result[domain] = append(result[domain], GetPodServiceRawIP(s.Target, zone).String())
 				} else if IsServiceFormat(s.Target, zone) {
 					// result[dns.Fqdn(s.Target)]
-					log.Debugf("can't put ip address in service %v in record %v", dns.Fqdn(s.Target), r)
+					if r.Ip != nil {
+						result[dns.Fqdn(s.Target)] = append(result[dns.Fqdn(s.Target)], r.Ip.String())
+					} else {
+						log.Debugf("Lost service ip addr %v because of in srv record", s.Target)
+						log.Debugf("can't put ip address in service %v in record %v", dns.Fqdn(s.Target), r)
+					}
 				} else {
 					log.Debugf("Unhandled service type: %v", s.Target)
 				}

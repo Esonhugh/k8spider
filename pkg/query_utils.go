@@ -101,7 +101,7 @@ func (r *SpiderResolver) filterStringArray(target []string) []string {
 		}
 		filtered = append(filtered, re)
 	}
-	log.Tracef("filtering %s \nresult: %s", strings.Join(target, " "), strings.Join(filtered, " "))
+	log.Tracef("filtering '%s', result: %s", strings.Join(target, " "), strings.Join(filtered, " "))
 	return filtered
 }
 

@@ -59,7 +59,7 @@ func (s *SubnetScanner) scan(subnet *net.IPNet, to chan define.Record) {
 		ptr := pkg.PTRRecord(ip)
 		if len(ptr) > 0 {
 			for _, domain := range ptr {
-				log.Infof("PTRrecord %v --> %v", subnet, domain)
+				log.Infof("PTRrecord %v --> %v", ip, domain)
 				r := define.Record{Ip: ip, SvcDomain: domain}
 				to <- r
 			}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"runtime/debug"
 	"strings"
 
 	"github.com/esonhugh/k8spider/pkg"
@@ -31,6 +32,8 @@ var Opts = struct {
 
 	DnsTimeout int
 	Latency    int
+
+	Version string
 }{}
 
 func defaultPodCidr() string {
@@ -54,7 +57,28 @@ func defaultCidr() string {
 	return "10.96.0.1/16"
 }
 
+var commitVersion = func() string {
+	version := "unknown"
+	if info, ok := debug.ReadBuildInfo(); ok {
+		var time = "0000-00-00"
+		var commit = strings.Repeat("a", 6)
+		var modified = "false"
+		for _, settings := range info.Settings {
+			if settings.Key == "vcs.revision" {
+				commit = settings.Value
+			} else if settings.Key == "vcs.time" {
+				time = settings.Value
+			} else if settings.Key == "vcs.modified" {
+				modified = settings.Value
+			}
+		}
+		return fmt.Sprintf("%v (%v,%v,modify:%v)", info.Main.Version, commit[:6], time[:10], modified)
+	}
+	return version
+}
+
 func init() {
+	RootCmd.AddCommand(VersionCommand)
 
 	RootCmd.PersistentFlags().StringVarP(&Opts.Cidr, "cidr", "c", defaultCidr(), "cidr like: 192.168.0.1/16")
 	RootCmd.PersistentFlags().StringVarP(&Opts.PodCidr, "pod-cidr", "p", defaultPodCidr(), "pod cidr list, watch out for the network interface name, default is eth0")
@@ -77,6 +101,15 @@ func init() {
 	RootCmd.PersistentFlags().StringSliceVarP(&Opts.FilterStrings, "filter-strings", "f", []string{}, "filter contained strings")
 
 	RootCmd.PersistentFlags().IntVarP(&Opts.Latency, "latency", "l", 0, "Latency control while each dns query in ms, default 0ms")
+
+	Opts.Version = commitVersion()
+}
+
+var VersionCommand = &cobra.Command{
+	Use: "version",
+	Run: func(cmd *cobra.Command, args []string) {
+		log.Infof("k8spider current running version is %v", Opts.Version)
+	},
 }
 
 var RootCmd = &cobra.Command{

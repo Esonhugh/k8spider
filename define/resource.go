@@ -32,6 +32,11 @@ func (r *Resource) AddLabelSpec(l Label) {
 	if _, ok := r.Spec[l.Key]; !ok {
 		r.Spec[l.Key] = make([]string, 0)
 	}
+	for _, v := range r.Spec[l.Key] { // check if the value already exists
+		if v == l.Value {
+			return
+		}
+	}
 	r.Spec[l.Key] = append(r.Spec[l.Key], l.Value)
 }
 

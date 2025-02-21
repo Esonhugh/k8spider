@@ -11,6 +11,7 @@ func DefaultMatchRules() metrics.MatchRules {
 		metrics.NewMetricMatcher("secret").AddLabel("namespace").AddLabel("secret"),
 
 		metrics.NewMetricMatcher("node").AddLabel("node").AddLabel("kernel_version").
+			AddLabel("kubelet_version").AddLabel("kubeproxy_version").
 			AddLabel("os_image").AddLabel("container_runtime_version").
 			AddLabel("provider_id").AddLabel("internal_ip"),
 		metrics.NewMetricMatcher("node_role").SetHeader("kube_node_role").
@@ -36,9 +37,9 @@ func DefaultMatchRules() metrics.MatchRules {
 
 		metrics.NewMetricMatcher("service").AddLabel("namespace").AddLabel("service").
 			AddLabel("cluster_ip").AddLabel("external_name").AddLabel("load_balancer_ip"),
-		metrics.NewMetricMatcher("endpoint_address").SetHeader("kube_endpoint_address").
+		metrics.NewMetricMatcher("endpoint_address").SetHeader("kube_endpoint_address").SetNameLabel("endpoint").
 			AddLabel("namespace").AddLabel("endpoint").AddLabel("ip"),
-		metrics.NewMetricMatcher("endpoint_port").SetHeader("kube_endpoint_ports").
+		metrics.NewMetricMatcher("endpoint_port").SetHeader("kube_endpoint_ports").SetNameLabel("endpoint").
 			AddLabel("namespace").AddLabel("endpoint").AddLabel("port_number"),
 
 		metrics.NewMetricMatcher("persistentvolume").AddLabel("persistentvolume").AddLabel("storageclass").
@@ -46,13 +47,15 @@ func DefaultMatchRules() metrics.MatchRules {
 			AddLabel("nfs_server").AddLabel("nfs_path").AddLabel("csi_driver").AddLabel("csi_volume_handle").
 			AddLabel("local_path").AddLabel("local_fs").AddLabel("host_path").AddLabel("host_path_type"),
 
-		metrics.NewMetricMatcher("validating_webhook").SetNameLabel("service_name").
+		metrics.NewMetricMatcher("validating_webhook").
 			SetHeader("kube_validatingwebhookconfiguration_webhook_clientconfig_service").
+			AddLabel("validatingwebhookconfiguration").SetNameLabel("validatingwebhookconfiguration").
 			AddLabel("namespace").AddLabel("webhook_name").
 			AddLabel("service_name").AddLabel("service_namespace"),
 
-		metrics.NewMetricMatcher("mutating_webhook").SetNameLabel("service_name").
+		metrics.NewMetricMatcher("mutating_webhook").
 			SetHeader("kube_mutatingwebhookconfiguration_webhook_clientconfig_service").
+			AddLabel("mutatingwebhookconfiguration").SetNameLabel("mutatingwebhookconfiguration").
 			AddLabel("namespace").AddLabel("webhook_name").
 			AddLabel("service_name").AddLabel("service_namespace"),
 	}
@@ -62,6 +65,9 @@ var NodeMergeHook metrics.ResourceMergeHook = func(m *metrics.MetricMatcher, res
 	if m.Type == "node" || m.Type == "node_role" {
 		for i := len(res) - 1; i >= 0; i-- {
 			c := res[i]
+			if c.Type != "node" {
+				continue
+			}
 			if m.FindLabel("node") == c.Name {
 				r = res[i]
 				return r, false
@@ -76,6 +82,9 @@ var EndpointMergeHook metrics.ResourceMergeHook = func(m *metrics.MetricMatcher,
 	if m.Type == "endpoint_address" || m.Type == "endpoint_port" {
 		for i := len(res) - 1; i >= 0; i-- {
 			c := res[i]
+			if c.Type != "endpoint" {
+				continue
+			}
 			if m.FindLabel("namespace") == c.Namespace && m.FindLabel("endpoint") == c.Name {
 				r = res[i]
 				return r, false
@@ -95,6 +104,33 @@ var EndpointMergeHook metrics.ResourceMergeHook = func(m *metrics.MetricMatcher,
 	return nil, true
 }
 
+var WebhookMergeHook metrics.ResourceMergeHook = func(m *metrics.MetricMatcher, res define.ResourceList) (r *define.Resource, addFlag bool) {
+	if m.Type == "mutating_webhook" {
+		for i := len(res) - 1; i >= 0; i-- {
+			if res[i].Type != "mutating_webhook" {
+				continue
+			}
+			if m.FindLabel(m.LabelNameOfName()) == res[i].Name {
+				r = res[i]
+				return r, false
+			}
+		}
+		return define.NewResource("mutating_webhook"), true
+	} else if m.Type == "validating_webhook" {
+		for i := len(res) - 1; i >= 0; i-- {
+			if res[i].Type != "validating_webhook" {
+				continue
+			}
+			if m.FindLabel(m.LabelNameOfName()) == res[i].Name {
+				r = res[i]
+				return r, false
+			}
+		}
+		return define.NewResource("validating_webhook"), true
+	}
+	return nil, true
+}
+
 func init() {
-	metrics.HookList = append(metrics.HookList, NodeMergeHook, EndpointMergeHook)
+	metrics.HookList = append(metrics.HookList, NodeMergeHook, EndpointMergeHook, WebhookMergeHook)
 }

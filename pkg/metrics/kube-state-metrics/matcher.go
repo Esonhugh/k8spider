@@ -46,12 +46,12 @@ func DefaultMatchRules() metrics.MatchRules {
 			AddLabel("nfs_server").AddLabel("nfs_path").AddLabel("csi_driver").AddLabel("csi_volume_handle").
 			AddLabel("local_path").AddLabel("local_fs").AddLabel("host_path").AddLabel("host_path_type"),
 
-		metrics.NewMetricMatcher("validating_webhook").SetNameLabel("webhook_name").
+		metrics.NewMetricMatcher("validating_webhook").SetNameLabel("service_name").
 			SetHeader("kube_validatingwebhookconfiguration_webhook_clientconfig_service").
 			AddLabel("namespace").AddLabel("webhook_name").
 			AddLabel("service_name").AddLabel("service_namespace"),
 
-		metrics.NewMetricMatcher("mutating_webhook").SetNameLabel("webhook_name").
+		metrics.NewMetricMatcher("mutating_webhook").SetNameLabel("service_name").
 			SetHeader("kube_mutatingwebhookconfiguration_webhook_clientconfig_service").
 			AddLabel("namespace").AddLabel("webhook_name").
 			AddLabel("service_name").AddLabel("service_namespace"),

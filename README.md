@@ -33,6 +33,39 @@ echo $KUBERNETES_SERVICE_HOST
 ./k8spider all
 ```
 
+Use in the kubernetes
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    run: spider
+  name: spider
+spec:
+  containers:
+  - image: k8spider/k8spider
+    name: spider
+    resources: {}
+  dnsPolicy: ClusterFirst
+  restartPolicy: Always
+# kubectl apply -f spider.yaml
+```
+
+or just using kubectl run
+
+```bash
+## just run it! 
+kubectl run spider --image k8spider/k8spider 
+```
+
+and watch result with
+
+```bash
+kubectl logs spider
+```
+
 ## Example
 
 ### Normal Attack - all command - ALL IN ONE

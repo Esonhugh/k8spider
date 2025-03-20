@@ -2,8 +2,6 @@ module github.com/esonhugh/k8spider
 
 go 1.21.0
 
-toolchain go1.23.2
-
 require (
 	github.com/elastic/go-grok v0.3.1
 	github.com/miekg/dns v1.1.58

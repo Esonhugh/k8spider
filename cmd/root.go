@@ -77,6 +77,8 @@ func init() {
 	RootCmd.PersistentFlags().StringSliceVarP(&Opts.FilterStrings, "filter-strings", "f", []string{}, "filter contained strings")
 
 	RootCmd.PersistentFlags().IntVarP(&Opts.Latency, "latency", "l", 0, "Latency control while each dns query in ms, default 0ms")
+	// Set Log Levels
+	SetLogLevel(Opts.Verbose)
 }
 
 var RootCmd = &cobra.Command{
@@ -84,8 +86,6 @@ var RootCmd = &cobra.Command{
 	Short: "k8spider is a tool to discover k8s services",
 	Long:  "k8spider is Powerful+Fast+Low Privilege Kubernetes service discovery tools via kubernetes DNS service. Currently supported service ip-port BruteForcing / AXFR Domain Transfer Dump / Coredns WildCard Dump / Pod Verified IP discovery\n\nTopics\n",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		// Set Log Levels
-		SetLogLevel(Opts.Verbose)
 		// Set pkg global config
 		pkg.Zone = Opts.Zone
 

@@ -2,6 +2,7 @@ package nfs
 
 import (
 	"fmt"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -35,13 +36,18 @@ var ListCommand = &cobra.Command{
 
 			for _, entry := range entries {
 				if lsOpts.ListAll {
+					modeStr := entry.Mode().Perm().String()
+					if entry.IsDir() {
+						modeStr = strings.Replace(modeStr, "-", "d", 1)
+					}
 					if entry.Attr.IsSet {
 						fmt.Printf("%s\t%d\t%d\t%d\t%s\t%s\n",
-							entry.Mode().String(), entry.Attr.Attr.UID, entry.Attr.Attr.GID,
+							modeStr, entry.Attr.Attr.UID, entry.Attr.Attr.GID,
 							entry.Size(), entry.ModTime().Format("2006-01-02 15:04:05"), entry.Name())
 					} else {
+
 						fmt.Printf("%s\t%d\t%s\t%s\n",
-							entry.Mode().String(), entry.Size(), entry.ModTime().Format("2006-01-02 15:04:05"), entry.Name())
+							modeStr, entry.Size(), entry.ModTime().Format("2006-01-02 15:04:05"), entry.Name())
 					}
 				} else {
 					fmt.Printf("%s\n", entry.Name())

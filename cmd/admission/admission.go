@@ -3,13 +3,15 @@ package admission
 import (
 	"errors"
 	"fmt"
+	"os"
+
 	command "github.com/esonhugh/k8spider/cmd"
 	"github.com/esonhugh/k8spider/pkg/admission-webhook/reviewer"
+	"github.com/esonhugh/k8spider/pkg/admission-webhook/reviewer/defaultResource"
 	"github.com/guonaihong/gout"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	v1 "k8s.io/api/admission/v1"
-	"os"
 )
 
 var Opts = struct {
@@ -21,15 +23,18 @@ var Opts = struct {
 	ControllerEndpoint string
 
 	FileContent [][]byte
+
+	UseDefaultContent string
 }{}
 
 func init() {
 	AdmitCmd.Flags().StringVarP(&Opts.As, "as", "a", "", "as username ")
-	AdmitCmd.Flags().StringSliceVarP(&Opts.Group, "group", "g", []string{}, "group")
+	AdmitCmd.Flags().StringSliceVarP(&Opts.Group, "group", "g", []string{}, "as group")
 	AdmitCmd.Flags().IntVarP(&Opts.Indent, "indent", "I", 2, "indent")
 	AdmitCmd.Flags().StringVarP(&Opts.Action, "action", "A", "create", "action")
 	AdmitCmd.Flags().BoolVarP(&Opts.SendToController, "send-to-controller", "s", false, "send to controller")
 	AdmitCmd.Flags().StringVarP(&Opts.ControllerEndpoint, "controller-endpoint", "e", "", "controller endpoint")
+	AdmitCmd.Flags().StringVarP(&Opts.UseDefaultContent, "use-default-content", "C", "", "use default resource content if not specified")
 	command.RootCmd.AddCommand(AdmitCmd)
 }
 
@@ -42,6 +47,21 @@ var AdmitCmd = &cobra.Command{
 			if Opts.ControllerEndpoint == "" {
 				return errors.New("if send to controller is ture, controller-endpoint can't be empty")
 			}
+		}
+		if Opts.UseDefaultContent != "" {
+			switch Opts.UseDefaultContent {
+			case "pod":
+				Opts.FileContent = append(Opts.FileContent, []byte(defaultResource.Resources.Pod))
+			case "deployment", "deploy":
+				Opts.FileContent = append(Opts.FileContent, []byte(defaultResource.Resources.Deployment))
+			case "ingress", "ing":
+				Opts.FileContent = append(Opts.FileContent, []byte(defaultResource.Resources.Ingress))
+			case "ingress-tls", "ing-tls":
+				Opts.FileContent = append(Opts.FileContent, []byte(defaultResource.Resources.TLSIngress))
+			default:
+				return errors.New("use-default-content only support pod, deployment(deploy), ingress(ing), ingress-tls(ing-tls)")
+			}
+			return nil
 		}
 		if len(args) == 0 {
 			return errors.New("file args can't be empty")

@@ -77,6 +77,9 @@ func init() {
 	RootCmd.PersistentFlags().StringSliceVarP(&Opts.FilterStrings, "filter-strings", "f", []string{}, "filter contained strings")
 
 	RootCmd.PersistentFlags().IntVarP(&Opts.Latency, "latency", "l", 0, "Latency control while each dns query in ms, default 0ms")
+
+	// Don't sort the flag order
+	RootCmd.PersistentFlags().SortFlags = false
 }
 
 var RootCmd = &cobra.Command{

@@ -9,6 +9,7 @@ import (
 	_ "github.com/esonhugh/k8spider/cmd/dnsutils"
 	_ "github.com/esonhugh/k8spider/cmd/metrics"
 	_ "github.com/esonhugh/k8spider/cmd/neighbor"
+	_ "github.com/esonhugh/k8spider/cmd/nfs"
 	_ "github.com/esonhugh/k8spider/cmd/whereisdns"
 	_ "github.com/esonhugh/k8spider/cmd/wildcard"
 )

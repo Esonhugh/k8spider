@@ -153,6 +153,11 @@ func PostRun(finalRecord define.Records, file string) {
 					log.Warnf("Checkout service %v, which maybe contains apps metrics information", svc)
 				}
 			}
+			if strings.Contains(svc, "ingress-nginx-controller-admission") ||
+				(strings.Contains(svc, "admission") &&
+					(strings.Contains(svc, "nginx-ingress") || strings.Contains(svc, "ingress-nginx"))) {
+				log.Warnf("Checkout service %v, which maybe effects CVE-2025-1974 nginx ingress controllor ", svc)
+			}
 			log.Infof("Service: %s", svc)
 			writeString("// \t\t" + svc + "\n")
 		}
